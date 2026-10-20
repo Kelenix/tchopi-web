@@ -1,26 +1,79 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Jetons du design system Tchopi (identiques au mobile : tchopi/docs/design/design-system.md). */
+:root,
+[data-theme="light"] {
+  --background: #f5f6f3;
+  --surface: #ffffff;
+  --surface-alt: #eef1ec;
+  --border: #e4e7e2;
+  --ink: #0f1412;
+  --on-ink: #ffffff;
+  --muted: #646b78;
+  --primary: #0b5d3b;
+  --on-primary: #ffffff;
+  --primary-soft: #e3f1e9;
+  --success: #16a34a;
+  --warning: #9a4a07;
+  --warning-soft: #fcefd9;
+  --danger: #c81e1e;
+  --danger-soft: #fde7e7;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --background: #0c110e;
+  --surface: #151b17;
+  --surface-alt: #1e2621;
+  --border: #2a332d;
+  --ink: #eef2ee;
+  --on-ink: #0f1412;
+  --muted: #9aa39c;
+  --primary: #3dd68c;
+  --on-primary: #06281a;
+  --primary-soft: #173326;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --warning-soft: #33270f;
+  --danger: #f87171;
+  --danger-soft: #3a1717;
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-border: var(--border);
+  --color-ink: var(--ink);
+  --color-on-ink: var(--on-ink);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --radius-chip: 12px;
+  --radius-field: 16px;
+  --radius-card: 24px;
+  --shadow-float: 0 8px 24px rgb(0 0 0 / 0.06);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background: var(--background);
+    color: var(--ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility tabular {
+  font-variant-numeric: tabular-nums;
 }
