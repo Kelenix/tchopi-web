@@ -1,4 +1,8 @@
-import { ChevronDown } from "lucide-react";
+"use client";
+
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { Plus } from "lucide-react";
+import { useState } from "react";
 
 // Réponses fidèles au fonctionnement réel de la plateforme (mêmes règles que l'app mobile).
 const questions = [
@@ -32,18 +36,43 @@ const questions = [
   },
 ];
 
+/** Questions fréquentes : cartes en verre, une ouverte à la fois, ouverture animée. */
 export function Faq() {
+  const [open, setOpen] = useState<number | null>(0);
+  const reduce = useReducedMotion();
   return (
-    <div className="divide-y divide-border rounded-card border border-border bg-surface">
-      {questions.map(({ q, a }) => (
-        <details key={q} className="group px-6 py-5 [&_summary::-webkit-details-marker]:hidden">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold">
-            {q}
-            <ChevronDown className="size-5 shrink-0 text-muted transition group-open:rotate-180" aria-hidden />
-          </summary>
-          <p className="mt-3 text-sm leading-relaxed text-muted">{a}</p>
-        </details>
-      ))}
-    </div>
+    <ul className="space-y-3">
+      {questions.map(({ q, a }, i) => {
+        const isOpen = open === i;
+        return (
+          <li key={q} className={`glass-nav overflow-hidden rounded-[28px] transition ${isOpen ? "ring-1 ring-[#ff8a3d]/40" : ""}`}>
+            <button
+              type="button"
+              aria-expanded={isOpen}
+              onClick={() => setOpen(isOpen ? null : i)}
+              className="flex w-full items-center gap-5 px-6 py-5 text-left"
+            >
+              <span className="tabular font-display text-2xl text-[#ff8a3d]">{String(i + 1).padStart(2, "0")}</span>
+              <span className="flex-1 text-base font-semibold sm:text-lg">{q}</span>
+              <motion.span animate={{ rotate: isOpen ? 45 : 0 }} transition={{ duration: reduce ? 0 : 0.25 }} className="grid size-9 shrink-0 place-items-center rounded-full bg-ink/5">
+                <Plus className="size-4" aria-hidden />
+              </motion.span>
+            </button>
+            <AnimatePresence initial={false}>
+              {isOpen && (
+                <motion.div
+                  initial={reduce ? false : { height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={reduce ? undefined : { height: 0, opacity: 0 }}
+                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <p className="px-6 pb-6 pl-[4.6rem] leading-relaxed text-muted">{a}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

@@ -9,7 +9,7 @@ import { Faq } from "@/components/faq";
 import { DishMarquee } from "@/components/home/dish-marquee";
 import { GlassCity } from "@/components/home/glass-city";
 import { Hero } from "@/components/home/hero";
-import { HeroMap } from "@/components/home/hero-map";
+import { RouteShowcase } from "@/components/home/route-showcase";
 import { Process } from "@/components/home/process";
 import { ButtonLink, SectionTitle } from "@/components/ui";
 import { getEstablishments, getFeaturedProducts, getZones, pickZone, type Zone } from "@/lib/catalog";
@@ -45,7 +45,7 @@ export default function HomePage({ searchParams }: PageProps<"/">) {
             <li>Livreur joignable d&apos;un appui</li>
           </ul>
         </div>
-        <HeroMap />
+        <RouteShowcase />
       </section>
 
       <section id="fonctionnement" className="mx-auto mt-28 max-w-6xl scroll-mt-24 px-4 sm:px-6">
