@@ -34,6 +34,8 @@ export type Order = {
   recipient_name: string;
   recipient_phone: string | null;
   dropoff_district: string;
+  dropoff_lat: number;
+  dropoff_lng: number;
   dropoff_landmark: string;
   dropoff_instructions: string | null;
   subtotal: number;

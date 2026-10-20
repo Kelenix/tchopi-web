@@ -59,7 +59,7 @@ export function Menu({ establishment }: { establishment: EstablishmentDetail }) 
       {count > 0 && current && (
         <div className="fixed inset-x-0 bottom-4 z-40 px-4">
           <Link
-            href="/panier"
+            href="/espace/panier"
             className="mx-auto flex h-14 max-w-md items-center justify-between rounded-full bg-primary px-6 font-semibold text-on-primary shadow-float"
           >
             <span className="inline-flex items-center gap-2">
