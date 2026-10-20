@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { Wallet } from "lucide-react";
+import { ColumnChart, Kpi, PeriodPicker } from "@/components/admin-charts";
+import { CashBalances } from "@/components/cash-balances";
 import { EmptyState } from "@/components/empty-state";
 import { Badge, Card } from "@/components/ui";
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import { paymentMethodLabel, paymentStatusLabel, type PaymentMethod, type PaymentStatus } from "@/lib/orders";
+import { useAdminRpc } from "@/lib/admin";
+import { bucketLabel, periodRange, presetPeriod, type Period } from "@/lib/period";
 import { browserClient } from "@/lib/supabase";
 
 type Option = { id: string; method: PaymentMethod; label: string; operator: string | null; provider: string | null; is_enabled: boolean };
@@ -59,7 +63,17 @@ export default function AdminPaymentsPage() {
   return (
     <>
       <h1 className="font-display text-4xl leading-tight sm:text-5xl">Paiements</h1>
-      <Card className="mt-6 p-5">
+      <PaymentStats />
+
+      <h2 className="mt-10 text-xl font-extrabold">Espèces à reverser</h2>
+      <p className="mt-1 max-w-2xl text-sm text-muted">
+        Encaissées par les livreurs à la livraison et dues à la plateforme jusqu&apos;à leur versement. Enregistrez chaque versement reçu.
+      </p>
+      <div className="mt-4">
+        <CashBalances />
+      </div>
+
+      <Card className="mt-10 p-5">
         <h2 className="font-bold">Moyens de paiement proposés</h2>
         <p className="text-sm text-muted">N&apos;activez un paiement en ligne qu&apos;après les essais réels avec les clés du fournisseur (docs/mise-en-service.md).</p>
         <ul className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -90,7 +104,8 @@ export default function AdminPaymentsPage() {
         {error && <p className="mt-3 text-sm text-danger">{error}</p>}
       </Card>
 
-      <div className="mt-8 flex flex-wrap gap-2">
+      <h2 className="mt-10 text-xl font-extrabold">Transactions en ligne</h2>
+      <div className="mt-4 flex flex-wrap gap-2">
         {filters.map(([key, label]) => (
           <button key={key} onClick={() => setFilter(key)} className={`rounded-full px-4 py-2 text-sm font-semibold ${filter === key ? "bg-ink text-on-ink" : "bg-surface text-muted ring-1 ring-border"}`}>
             {label}
@@ -134,6 +149,97 @@ export default function AdminPaymentsPage() {
             </table>
           </Card>
         )}
+      </div>
+    </>
+  );
+}
+
+type Stats = {
+  count: number;
+  amount: number;
+  collected: number;
+  by_outcome: Record<"succeeded" | "pending" | "failed" | "refunded", { count: number; amount: number }>;
+  by_method: { method: PaymentMethod; count: number; amount: number; collected: number; succeeded: number }[];
+  series: { bucket: string; cash: number; mobile_money: number; card: number }[];
+  online: { attempts: number; succeeded: number; failed: number; pending: number };
+  cash: { collected: number; remitted: number; outstanding: number };
+};
+const count = (n: number) => new Intl.NumberFormat("fr-FR").format(n);
+const outcomes = [
+  ["succeeded", "Réussis", "Encaissés"],
+  ["pending", "En attente", "Commandes en cours"],
+  ["failed", "Échoués", "Commandes non payées puis annulées"],
+  ["refunded", "Remboursés", "Demandés ou effectués"],
+] as const;
+
+/** Statistiques de paiement d'une période, calculées par le serveur sur toutes les commandes (espèces comprises). */
+function PaymentStats() {
+  const [period, setPeriod] = useState<Period>(() => presetPeriod("month"));
+  const range = periodRange(period);
+  const s = useAdminRpc<Stats>("admin_payment_stats", range);
+  return (
+    <>
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <p className="text-sm text-muted">
+          {s ? `${count(s.count)} paiement(s) · ${formatMoney(s.amount)} au total · ${formatMoney(s.collected)} encaissés` : "Chargement…"}
+        </p>
+        <PeriodPicker value={period} onChange={setPeriod} />
+      </div>
+      <section className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {outcomes.map(([k, label, sub]) => (
+          <Kpi key={k} label={label} value={s ? formatMoney(s.by_outcome[k].amount) : "…"} sub={s && `${count(s.by_outcome[k].count)} · ${sub}`} />
+        ))}
+      </section>
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <ColumnChart
+          title="Montants encaissés par moyen de paiement"
+          series={[
+            { key: "cash", label: paymentMethodLabel.cash, color: "var(--series-1)" },
+            { key: "mobile_money", label: paymentMethodLabel.mobile_money, color: "var(--series-2)" },
+            { key: "card", label: paymentMethodLabel.card, color: "var(--series-3)" },
+          ]}
+          points={(s?.series ?? []).map((p) => ({ label: bucketLabel(p.bucket, range.p_bucket), values: p }))}
+          format={formatMoney}
+        />
+        <Card className="p-5">
+          <h3 className="font-bold">Par moyen de paiement</h3>
+          <table className="mt-3 w-full text-sm">
+            <thead className="text-left text-xs text-muted">
+              <tr>
+                <th className="py-1.5">Moyen</th>
+                <th className="py-1.5 text-right">Paiements</th>
+                <th className="py-1.5 text-right">Encaissé</th>
+              </tr>
+            </thead>
+            <tbody className="tabular divide-y divide-border">
+              {(s?.by_method ?? []).map((m) => (
+                <tr key={m.method}>
+                  <td className="py-2">{paymentMethodLabel[m.method]}</td>
+                  <td className="py-2 text-right">
+                    {count(m.succeeded)} / {count(m.count)}
+                  </td>
+                  <td className="py-2 text-right font-semibold">{formatMoney(m.collected)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {s && (
+            <dl className="mt-5 space-y-1.5 border-t border-border pt-4 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-muted">Tentatives en ligne</dt>
+                <dd className="tabular">
+                  {count(s.online.succeeded)} réussies · {count(s.online.failed)} échouées · {count(s.online.pending)} en attente
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted">Espèces encaissées / reversées</dt>
+                <dd className="tabular">
+                  {formatMoney(s.cash.collected)} / {formatMoney(s.cash.remitted)}
+                </dd>
+              </div>
+            </dl>
+          )}
+        </Card>
       </div>
     </>
   );

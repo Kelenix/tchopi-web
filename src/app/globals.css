@@ -5,6 +5,10 @@
 [data-theme="light"] {
   --background: #f5f6f3;
   --surface: #ffffff;
+  /* Séries des graphiques (palette catégorielle validée, clair / sombre) */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
   --surface-alt: #eef1ec;
   --border: #e4e7e2;
   --ink: #0f1412;
@@ -24,6 +28,9 @@
 [data-theme="dark"] {
   --background: #0c110e;
   --surface: #151b17;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
   --surface-alt: #1e2621;
   --border: #2a332d;
   --ink: #eef2ee;

@@ -5,7 +5,7 @@ import { Bike } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { Badge, Button, Card } from "@/components/ui";
 import { errorMessage } from "@/lib/errors";
-import { formatDateTime, formatMoney } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
 import { browserClient } from "@/lib/supabase";
 
 type Status = "pending" | "approved" | "rejected" | "suspended";
@@ -20,36 +20,30 @@ type CourierRow = {
   profile: { first_name: string | null; last_name: string | null; phone: string | null } | null;
   zone: { name: string } | null;
 };
-type Balance = { courier_id: string; first_name: string | null; last_name: string | null; phone: string | null; collected: number; remitted: number; due: number };
 
-const tabs: [Status | "cash", string][] = [
+const tabs: [Status, string][] = [
   ["pending", "À valider"],
   ["approved", "Approuvés"],
   ["suspended", "Suspendus"],
   ["rejected", "Refusés"],
-  ["cash", "Espèces à reverser"],
 ];
 const vehicles: Record<string, string> = { motorbike: "Moto", bicycle: "Vélo", car: "Voiture", on_foot: "À pied" };
 
 export default function AdminCouriersPage() {
   const db = browserClient();
-  const [tab, setTab] = useState<Status | "cash">("pending");
-  const [rows, setRows] = useState<{ tab: string; couriers: CourierRow[]; balances: Balance[] } | null>(null);
+  const [tab, setTab] = useState<Status>("pending");
+  const [rows, setRows] = useState<{ tab: string; couriers: CourierRow[] } | null>(null);
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
     let alive = true;
-    (tab === "cash"
-      ? db.rpc("admin_cash_balances").then(({ data }) => ({ couriers: [], balances: (data ?? []) as Balance[] }))
-      : db
-          .from("couriers")
-          .select("*, profile:profiles(first_name, last_name, phone), zone:zones(name)")
-          .eq("status", tab)
-          .order("updated_at", { ascending: false })
-          .then(({ data }) => ({ couriers: (data ?? []) as unknown as CourierRow[], balances: [] }))
-    ).then((r) => alive && setRows({ tab, ...r }));
+    db.from("couriers")
+      .select("*, profile:profiles(first_name, last_name, phone), zone:zones(name)")
+      .eq("status", tab)
+      .order("updated_at", { ascending: false })
+      .then(({ data }) => alive && setRows({ tab, couriers: (data ?? []) as unknown as CourierRow[] }));
     return () => {
       alive = false;
     };
@@ -86,8 +80,6 @@ export default function AdminCouriersPage() {
       <div className="mt-6">
         {!current ? (
           <div className="h-48 animate-pulse rounded-card bg-surface-alt" />
-        ) : tab === "cash" ? (
-          <CashTable balances={current.balances} onRecorded={() => setVersion((v) => v + 1)} />
         ) : current.couriers.length === 0 ? (
           <EmptyState icon={Bike} title="Aucun livreur ici" />
         ) : (
@@ -137,52 +129,5 @@ export default function AdminCouriersPage() {
         )}
       </div>
     </>
-  );
-}
-
-function CashTable({ balances, onRecorded }: { balances: Balance[]; onRecorded: () => void }) {
-  const [error, setError] = useState<string | null>(null);
-  if (!balances.length) return <EmptyState icon={Bike} title="Aucune espèce à reverser" />;
-  async function record(b: Balance) {
-    const amount = Number(prompt(`Montant versé par ${b.first_name ?? "le livreur"} (F)`, String(b.due))?.replace(/\s/g, ""));
-    if (!Number.isInteger(amount) || amount <= 0) return;
-    const reference = prompt("Référence du versement (facultatif)")?.trim() || null;
-    const { error } = await browserClient().rpc("admin_record_cash_remittance", { p_courier_id: b.courier_id, p_amount: amount, p_reference: reference });
-    setError(error ? errorMessage(error) : null);
-    onRecorded();
-  }
-  return (
-    <Card className="overflow-x-auto">
-      {error && <p className="p-4 text-sm text-danger">{error}</p>}
-      <table className="w-full text-sm">
-        <thead className="text-left text-xs text-muted">
-          <tr>
-            <th className="p-4">Livreur</th>
-            <th className="p-4 text-right">Encaissé</th>
-            <th className="p-4 text-right">Reversé</th>
-            <th className="p-4 text-right">Dû</th>
-            <th className="p-4" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {balances.map((b) => (
-            <tr key={b.courier_id}>
-              <td className="p-4">
-                <span className="font-semibold">{[b.first_name, b.last_name].filter(Boolean).join(" ")}</span>
-                <span className="block text-xs text-muted">{b.phone}</span>
-              </td>
-              <td className="tabular p-4 text-right">{formatMoney(b.collected)}</td>
-              <td className="tabular p-4 text-right">{formatMoney(b.remitted)}</td>
-              <td className="tabular p-4 text-right font-bold">{formatMoney(b.due)}</td>
-              <td className="p-4 text-right">
-                <Button variant="soft" className="h-9 px-3 text-xs" disabled={b.due <= 0} onClick={() => record(b)}>
-                  Enregistrer un versement
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </Card>
   );
 }

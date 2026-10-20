@@ -19,15 +19,21 @@ type Rule = {
   max_fee: number;
   courier_base: number;
   courier_per_km: number;
+  rounding_step: number;
+  detour_factor: number;
 };
 const ruleFields: [keyof Rule, string][] = [
   ["base_fee", "Base"],
   ["per_km_fee", "Par km"],
   ["min_fee", "Minimum"],
   ["max_fee", "Maximum"],
+  ["rounding_step", "Arrondi au"],
   ["courier_base", "Livreur : base"],
   ["courier_per_km", "Livreur : par km"],
+  ["detour_factor", "Détour (secours)"],
 ];
+// Grille par défaut (ADR-046) : 500 F + 100 F par km de route.
+const defaults: Partial<Rule> = { base_fee: 500, per_km_fee: 100, min_fee: 500, max_fee: 50000, rounding_step: 5, detour_factor: 1.3 };
 
 export default function AdminSettingsPage() {
   return (
@@ -218,10 +224,24 @@ function ZoneEditor({ zone, rules, onClose, onSaved }: { zone: Zone | null; rule
         {(["food"] as const).map((service) => (
           <fieldset key={service} className="rounded-field border border-border p-4">
             <legend className="px-1 text-sm font-bold">Tarifs de livraison (F)</legend>
+            <p className="mb-3 text-xs text-muted">
+              Frais = base + distance par la route (km) × prix au km, arrondis, entre le minimum et le maximum. La distance vient du
+              serveur d&apos;itinéraires ; s&apos;il ne répond pas, vol d&apos;oiseau × détour. Exemple avec 500 + 100/km : 1 km = 600 F, 5 km =
+              1 000 F, 10 km = 1 500 F.
+            </p>
             <div className="grid gap-3 sm:grid-cols-3">
               {ruleFields.map(([k, label]) => (
                 <Field key={k} label={label}>
-                  <input name={`${service}-${k}`} type="number" min={0} required defaultValue={(rule(service)?.[k] as number | undefined) ?? ""} className={fieldClass} />
+                  <input
+                    name={`${service}-${k}`}
+                    type="number"
+                    min={k === "detour_factor" || k === "rounding_step" ? 1 : 0}
+                    max={k === "detour_factor" ? 3 : undefined}
+                    step={k === "detour_factor" ? 0.05 : 1}
+                    required
+                    defaultValue={(rule(service)?.[k] as number | undefined) ?? defaults[k] ?? ""}
+                    className={fieldClass}
+                  />
                 </Field>
               ))}
             </div>

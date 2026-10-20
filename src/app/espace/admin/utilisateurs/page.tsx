@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Search, Users } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { Badge, Button, Card, fieldClass } from "@/components/ui";
-import { errorMessage } from "@/lib/errors";
+import { errorMessage, functionErrorMessage } from "@/lib/errors";
 import { browserClient } from "@/lib/supabase";
 
 type Profile = { id: string; first_name: string | null; last_name: string | null; phone: string | null; city: string | null; is_suspended: boolean };
@@ -36,6 +36,24 @@ export default function AdminUsersPage() {
     // Blocage de connexion compris : fonction serveur admin-users (vérifie le rôle admin et trace l'action).
     const { error } = await db.functions.invoke("admin-users", { body: { action: u.is_suspended ? "reactivate" : "suspend", user_id: u.id, reason } });
     setError(error ? errorMessage(error) : null);
+    setVersion((v) => v + 1);
+  }
+
+  async function rename(u: Profile) {
+    const first = prompt("Prénom", u.first_name ?? "");
+    if (first === null) return;
+    const last = prompt("Nom", u.last_name ?? "");
+    if (last === null) return;
+    const { error } = await db.rpc("admin_update_profile", { p_user_id: u.id, p_first_name: first, p_last_name: last });
+    setError(error ? errorMessage(error) : null);
+    setVersion((v) => v + 1);
+  }
+
+  async function remove(u: Profile) {
+    const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || "ce compte";
+    if (!confirm(`Supprimer ${name} ? Ses données personnelles sont effacées, l'historique des commandes est conservé sans nom. Action définitive.`)) return;
+    const { error } = await db.functions.invoke("admin-users", { body: { action: "delete", user_id: u.id } });
+    setError(error ? await functionErrorMessage(error) : null);
     setVersion((v) => v + 1);
   }
 
@@ -76,8 +94,14 @@ export default function AdminUsersPage() {
                   </span>
                 </span>
                 {u.is_suspended && <Badge tone="danger">Suspendu</Badge>}
+                <Button variant="ghost" className="h-9 px-3 text-xs" onClick={() => rename(u)}>
+                  Modifier
+                </Button>
                 <Button variant={u.is_suspended ? "soft" : "outline"} className="h-9 px-3 text-xs" onClick={() => toggle(u)}>
                   {u.is_suspended ? "Réactiver" : "Suspendre"}
+                </Button>
+                <Button variant="outline" className="h-9 px-3 text-xs text-danger" onClick={() => remove(u)}>
+                  Supprimer
                 </Button>
               </div>
             ))}

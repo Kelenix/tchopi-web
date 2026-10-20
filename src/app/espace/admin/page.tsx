@@ -2,141 +2,149 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AlertTriangle, Bike, Store } from "lucide-react";
+import { AlertTriangle, Bike, Store, Wallet } from "lucide-react";
+import { BarList, ColumnChart, Kpi, PeriodPicker } from "@/components/admin-charts";
 import { Card } from "@/components/ui";
-import { orderAlerts, supervisedStatuses, type PlatformSettings } from "@/lib/admin";
+import { orderAlerts, supervisedStatuses, useAdminRpc, type PlatformSettings } from "@/lib/admin";
 import { formatMoney } from "@/lib/format";
-import { statusLabel, type Order, type OrderStatus } from "@/lib/orders";
+import { paymentMethodLabel, statusLabel, type Order, type OrderStatus, type PaymentMethod } from "@/lib/orders";
+import { bucketLabel, periodRange, presetPeriod, type Period } from "@/lib/period";
 import { browserClient } from "@/lib/supabase";
 
-type Stats = {
-  orders: number;
-  by_status: Record<string, number>;
-  by_type: Record<string, number>;
-  revenue: number;
-  delivery_fees: number;
-  commissions: number;
-  courier_earnings: number;
-  platform: number;
-  cash_to_reconcile: number;
-  refunds_pending: number;
-  couriers_online: number;
+type Dashboard = {
+  users: { total: number; new: number; suspended: number };
+  restaurants: { total: number; active: number; pending: number };
+  couriers: { total: number; approved: number; pending: number; online: number };
+  orders: { total: number; in_progress: number; delivered: number; cancelled: number; by_status: Record<string, number> };
+  money: { revenue: number; subtotal: number; delivery_fees: number; commissions: number; courier_earnings: number; platform: number; average_basket: number; average_distance_m: number };
+  by_method: { method: PaymentMethod; orders: number; amount: number }[];
+  by_zone: { zone_id: string; city: string; name: string; orders: number; delivered: number; revenue: number }[];
+  top_restaurants: { id: string; name: string; orders: number; revenue: number }[];
+  series: { bucket: string; orders: number; delivered: number; cancelled: number; revenue: number }[];
+  todo: { cash_to_reconcile: number; refunds_pending: number };
 };
-const periods = [
-  [1, "Aujourd'hui"],
-  [7, "7 jours"],
-  [30, "30 jours"],
-] as const;
 
+const count = (n: number) => new Intl.NumberFormat("fr-FR").format(Math.round(n));
+
+/** Tableau de bord admin : tout est calculé par le serveur (admin_dashboard) sur les données réelles de la période. */
 export default function AdminDashboard() {
-  const db = browserClient();
-  const [days, setDays] = useState<1 | 7 | 30>(1);
-  const [stats, setStats] = useState<{ days: number; value: Stats | null } | null>(null);
-  const [todo, setTodo] = useState<{ alerts: number; partners: number; couriers: number } | null>(null);
+  const [period, setPeriod] = useState<Period>(() => presetPeriod("week"));
+  const range = periodRange(period);
+  const d = useAdminRpc<Dashboard>("admin_dashboard", range);
+  const alerts = useAlertCount();
 
-  useEffect(() => {
-    let alive = true;
-    const from = new Date();
-    from.setHours(0, 0, 0, 0);
-    from.setDate(from.getDate() - (days - 1));
-    db.rpc("admin_stats", { p_from: from.toISOString(), p_to: new Date(Date.now() + 60_000).toISOString() }).then(
-      ({ data }) => alive && setStats({ days, value: data as Stats | null }),
-    );
-    return () => {
-      alive = false;
-    };
-  }, [db, days]);
-
-  useEffect(() => {
-    let alive = true;
-    Promise.all([
-      db.from("orders").select("*").in("status", supervisedStatuses).limit(200),
-      db.from("settings").select().single(),
-      db.from("restaurants").select("id", { count: "exact", head: true }).eq("review_status", "pending"),
-      db.from("couriers").select("user_id", { count: "exact", head: true }).eq("status", "pending"),
-    ]).then(([o, s, p, c]) => {
-      if (!alive) return;
-      const now = Date.now();
-      const alerts = ((o.data ?? []) as Order[]).filter((x) => orderAlerts(x, s.data as PlatformSettings, now).length).length;
-      setTodo({ alerts, partners: p.count ?? 0, couriers: c.count ?? 0 });
-    });
-    return () => {
-      alive = false;
-    };
-  }, [db]);
-
-  const s = stats?.days === days ? stats.value : null;
+  const pts = (d?.series ?? []).map((s) => ({ label: bucketLabel(s.bucket, range.p_bucket), values: s }));
 
   return (
     <>
-      <h1 className="font-display text-4xl leading-tight sm:text-5xl">Administration</h1>
-      <ul className="mt-6 grid gap-3 md:grid-cols-3">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <h1 className="font-display text-4xl leading-tight sm:text-5xl">Tableau de bord</h1>
+        <PeriodPicker value={period} onChange={setPeriod} />
+      </div>
+
+      <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { href: "/espace/admin/commandes", icon: AlertTriangle, n: todo?.alerts, label: "commande(s) à traiter" },
-          { href: "/espace/admin/etablissements?onglet=a-valider", icon: Store, n: todo?.partners, label: "restaurant(s) à valider" },
-          { href: "/espace/admin/livreurs", icon: Bike, n: todo?.couriers, label: "livreur(s) à valider" },
+          { href: "/espace/admin/commandes", icon: AlertTriangle, n: alerts, label: "commande(s) à traiter" },
+          { href: "/espace/admin/etablissements?onglet=a-valider", icon: Store, n: d?.restaurants.pending, label: "restaurant(s) à valider" },
+          { href: "/espace/admin/livreurs", icon: Bike, n: d?.couriers.pending, label: "livreur(s) à valider" },
+          { href: "/espace/admin/paiements", icon: Wallet, n: d?.todo.refunds_pending, label: "remboursement(s) en attente" },
         ].map((t) => (
           <li key={t.href}>
             <Link
               href={t.href}
-              className={`flex items-center gap-3 rounded-card border p-4 font-semibold transition hover:shadow-float ${t.n ? "border-warning bg-warning-soft text-warning" : "border-border bg-surface"}`}
+              className={`flex items-center gap-3 rounded-card border p-4 text-sm font-semibold transition hover:shadow-float ${t.n ? "border-warning bg-warning-soft text-warning" : "border-border bg-surface"}`}
             >
-              <t.icon className="size-5" aria-hidden />
+              <t.icon className="size-5 shrink-0" aria-hidden />
               <span className="tabular text-xl font-extrabold">{t.n ?? "…"}</span> {t.label}
             </Link>
           </li>
         ))}
       </ul>
 
-      <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-xl font-extrabold">Indicateurs</h2>
-        <div role="tablist" aria-label="Période" className="flex gap-1 rounded-full bg-surface-alt p-1">
-          {periods.map(([d, label]) => (
-            <button key={d} role="tab" aria-selected={days === d} onClick={() => setDays(d)} className={`h-9 rounded-full px-4 text-sm font-semibold ${days === d ? "bg-surface shadow-float" : "text-muted"}`}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <h2 className="mt-10 text-xl font-extrabold">Plateforme</h2>
       <section className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {(
-          [
-            ["Commandes", s ? String(s.orders) : "…"],
-            ["Chiffre d'affaires", s ? formatMoney(s.revenue) : "…"],
-            ["Frais de livraison", s ? formatMoney(s.delivery_fees) : "…"],
-            ["Commissions", s ? formatMoney(s.commissions) : "…"],
-            ["Rémunération livreurs", s ? formatMoney(s.courier_earnings) : "…"],
-            ["Part de la plateforme", s ? formatMoney(s.platform) : "…"],
-            ["Espèces à rapprocher", s ? formatMoney(s.cash_to_reconcile) : "…"],
-            ["Livreurs en ligne", s ? String(s.couriers_online) : "…"],
-          ] as const
-        ).map(([label, value]) => (
-          <Card key={label} className="p-5">
-            <p className="text-sm text-muted">{label}</p>
-            <p className="tabular mt-1 text-2xl font-extrabold">{value}</p>
-          </Card>
-        ))}
+        <Kpi label="Utilisateurs" value={d ? count(d.users.total) : "…"} sub={d && `${count(d.users.new)} nouveaux sur la période`} />
+        <Kpi label="Restaurants actifs" value={d ? count(d.restaurants.active) : "…"} sub={d && `${count(d.restaurants.total)} inscrits`} />
+        <Kpi label="Livreurs approuvés" value={d ? count(d.couriers.approved) : "…"} sub={d && `${count(d.couriers.total)} inscrits · ${count(d.couriers.online)} en ligne`} />
+        <Kpi label="Espèces à reverser" value={d ? formatMoney(d.todo.cash_to_reconcile) : "…"} sub="Encaissées par les livreurs, dues à la plateforme" />
       </section>
-      {s && (
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+
+      <h2 className="mt-10 text-xl font-extrabold">Commandes et chiffre d&apos;affaires</h2>
+      <section className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Kpi label="Commandes" value={d ? count(d.orders.total) : "…"} sub={d && `${count(d.orders.in_progress)} en cours`} />
+        <Kpi label="Livrées" value={d ? count(d.orders.delivered) : "…"} sub={d && `${count(d.orders.cancelled)} annulées ou refusées`} />
+        <Kpi label="Volume livré" value={d ? formatMoney(d.money.revenue) : "…"} sub={d && `Panier moyen ${formatMoney(d.money.average_basket)}`} />
+        <Kpi label="Part de la plateforme" value={d ? formatMoney(d.money.platform) : "…"} sub={d && `Commissions ${formatMoney(d.money.commissions)}`} />
+      </section>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <ColumnChart
+          title="Commandes livrées et annulées"
+          series={[
+            { key: "delivered", label: "Livrées", color: "var(--series-1)" },
+            { key: "cancelled", label: "Annulées ou refusées", color: "var(--series-2)" },
+          ]}
+          points={pts}
+          format={count}
+        />
+        <ColumnChart title="Chiffre d'affaires livré" series={[{ key: "revenue", label: "Chiffre d'affaires", color: "var(--series-1)" }]} points={pts} format={formatMoney} />
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <BarList
+          title="Par ville"
+          rows={(d?.by_zone ?? []).map((z) => ({ label: z.city, value: z.orders, sub: `${count(z.delivered)} livrées · ${formatMoney(z.revenue)}` }))}
+          format={count}
+          empty="Aucune commande sur la période."
+        />
+        <BarList
+          title="Par moyen de paiement (livrées)"
+          rows={(d?.by_method ?? []).map((m) => ({ label: paymentMethodLabel[m.method], value: m.amount, sub: `${count(m.orders)} commande(s)` }))}
+          format={formatMoney}
+          empty="Aucune commande livrée sur la période."
+        />
+        <BarList
+          title="Meilleurs restaurants"
+          rows={(d?.top_restaurants ?? []).map((r) => ({ label: r.name, value: r.revenue, sub: `${count(r.orders)} commande(s) livrée(s)` }))}
+          format={formatMoney}
+          empty="Aucune vente sur la période."
+        />
+      </div>
+
+      {d && (
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <Card className="p-5">
             <h3 className="font-bold">Commandes par statut</h3>
             <ul className="mt-3 space-y-1.5 text-sm">
-              {Object.entries(s.by_status).map(([k, n]) => (
+              {Object.entries(d.orders.by_status).map(([k, n]) => (
                 <li key={k} className="flex justify-between">
                   <span>{statusLabel(k as OrderStatus)}</span>
-                  <span className="tabular font-semibold">{n}</span>
+                  <span className="tabular font-semibold">{count(n)}</span>
                 </li>
               ))}
-              {!Object.keys(s.by_status).length && <li className="text-muted">Aucune commande sur la période.</li>}
+              {!Object.keys(d.orders.by_status).length && <li className="text-muted">Aucune commande sur la période.</li>}
             </ul>
           </Card>
           <Card className="p-5">
-            <h3 className="font-bold">Remboursements</h3>
+            <h3 className="font-bold">Répartition du volume livré</h3>
             <ul className="mt-3 space-y-1.5 text-sm">
-              <li className="flex justify-between">
-                <span>Remboursements en attente</span>
-                <span className="tabular font-semibold">{s.refunds_pending}</span>
+              {(
+                [
+                  ["Produits", d.money.subtotal],
+                  ["Frais de livraison", d.money.delivery_fees],
+                  ["Rémunération des livreurs", d.money.courier_earnings],
+                  ["Commissions des restaurants", d.money.commissions],
+                  ["Part de la plateforme", d.money.platform],
+                ] as const
+              ).map(([k, v]) => (
+                <li key={k} className="flex justify-between">
+                  <span>{k}</span>
+                  <span className="tabular font-semibold">{formatMoney(v)}</span>
+                </li>
+              ))}
+              <li className="flex justify-between text-muted">
+                <span>Distance moyenne livrée</span>
+                <span className="tabular">{(d.money.average_distance_m / 1000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} km</span>
               </li>
             </ul>
           </Card>
@@ -144,4 +152,22 @@ export default function AdminDashboard() {
       )}
     </>
   );
+}
+
+/** Commandes en alerte (mêmes règles que la page Commandes). */
+function useAlertCount(): number | undefined {
+  const [n, setN] = useState<number>();
+  useEffect(() => {
+    const db = browserClient();
+    let alive = true;
+    Promise.all([db.from("orders").select("*").in("status", supervisedStatuses).limit(200), db.from("settings").select().single()]).then(([o, s]) => {
+      if (!alive) return;
+      const now = Date.now();
+      setN(((o.data ?? []) as Order[]).filter((x) => orderAlerts(x, s.data as PlatformSettings, now).length).length);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return n;
 }

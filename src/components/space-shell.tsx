@@ -41,7 +41,27 @@ export function useAccount(): Account {
 
 type NavItem = { href: string; label: string; icon: typeof Store };
 
+const adminNav = {
+  title: "Administration",
+  items: [
+    { href: "/espace/admin", label: "Tableau de bord", icon: ShieldCheck },
+    { href: "/espace/admin/commandes", label: "Commandes", icon: ReceiptText },
+    { href: "/espace/admin/etablissements", label: "Restaurants", icon: Store },
+    { href: "/espace/admin/livreurs", label: "Livreurs", icon: Bike },
+    { href: "/espace/admin/utilisateurs", label: "Utilisateurs", icon: Users },
+    { href: "/espace/admin/paiements", label: "Paiements", icon: Wallet },
+    { href: "/espace/admin/parametres", label: "Zones et paramètres", icon: Settings },
+  ],
+};
+
+const account = { title: "Compte", items: [{ href: "/espace/profil", label: "Mon profil", icon: UserRound }] };
+
+/** Pages ouvertes à un compte admin : l'administration et son profil, jamais les espaces client ou livreur. */
+const adminAllowed = (path: string) => path.startsWith("/espace/admin") || path === "/espace/profil";
+
 function navFor(roles: Roles): { title: string; items: NavItem[] }[] {
+  // Séparation stricte (ADR-048) : l'admin supervise tout depuis l'administration, sans les espaces des autres rôles.
+  if (roles.is_admin) return [adminNav, account];
   const groups = [
     {
       title: "Client",
@@ -66,20 +86,6 @@ function navFor(roles: Roles): { title: string; items: NavItem[] }[] {
   if (roles.courier_status) {
     groups.push({ title: "Livreur", items: [{ href: "/espace/livreur", label: "Mon activité", icon: Bike }] });
   }
-  if (roles.is_admin) {
-    groups.push({
-      title: "Administration",
-      items: [
-        { href: "/espace/admin", label: "Tableau de bord", icon: ShieldCheck },
-        { href: "/espace/admin/commandes", label: "Commandes", icon: ReceiptText },
-        { href: "/espace/admin/etablissements", label: "Établissements", icon: Store },
-        { href: "/espace/admin/livreurs", label: "Livreurs", icon: Bike },
-        { href: "/espace/admin/utilisateurs", label: "Utilisateurs", icon: Users },
-        { href: "/espace/admin/paiements", label: "Paiements", icon: Wallet },
-        { href: "/espace/admin/parametres", label: "Zones et paramètres", icon: Settings },
-      ],
-    });
-  }
   return groups;
 }
 
@@ -92,9 +98,10 @@ export function SpaceShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (session === null) router.replace(`/connexion?suite=${encodeURIComponent(pathname)}`);
-  }, [session, router, pathname]);
+    else if (roles?.is_admin && !adminAllowed(pathname)) router.replace("/espace/admin");
+  }, [session, roles, router, pathname]);
 
-  if (!session || !roles) {
+  if (!session || !roles || (roles.is_admin && !adminAllowed(pathname))) {
     return (
       <div className="grid flex-1 place-items-center p-10 text-sm text-muted" aria-busy>
         {roles === null ? "Impossible de lire votre compte. Rechargez la page." : "Chargement de votre espace…"}

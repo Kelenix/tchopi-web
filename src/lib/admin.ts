@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { browserClient } from "./supabase";
 import type { Order } from "./orders";
 
 export type PlatformSettings = {
@@ -44,3 +46,19 @@ export const supervisedStatuses = [
   "in_transit",
   "failed",
 ];
+
+/** Appel d'une fonction admin de statistiques ; undefined tant que la réponse aux paramètres courants n'est pas là. */
+export function useAdminRpc<T>(fn: string, args: Record<string, string>): T | undefined {
+  const key = JSON.stringify(args);
+  const [result, setResult] = useState<{ key: string; data: T }>();
+  useEffect(() => {
+    let alive = true;
+    browserClient()
+      .rpc(fn, JSON.parse(key))
+      .then(({ data }) => alive && data && setResult({ key, data: data as T }));
+    return () => {
+      alive = false;
+    };
+  }, [fn, key]);
+  return result?.key === key ? result.data : undefined;
+}

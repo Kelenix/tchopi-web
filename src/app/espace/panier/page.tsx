@@ -22,6 +22,8 @@ type Quote = {
   subtotal: number;
   delivery_fee: number;
   total: number;
+  distance_m: number;
+  distance_source?: "road" | "estimate";
   couriers_available?: boolean;
   issues: { issue: string; product_id?: string; name?: string }[];
 };
@@ -239,6 +241,10 @@ export default function CheckoutPage() {
                 <div className="flex justify-between">
                   <dt className="text-muted">Produits</dt>
                   <dd className="tabular">{formatMoney(q.value.subtotal)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted">{q.value.distance_source === "estimate" ? "Distance estimée" : "Distance par la route"}</dt>
+                  <dd className="tabular">{(q.value.distance_m / 1000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} km</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted">Livraison</dt>

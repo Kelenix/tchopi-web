@@ -2,10 +2,10 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, type FormEvent } from "react";
-import { Check, Plus, Store, Trash2, X } from "lucide-react";
+import { Check, Plus, Store, Trash2, UtensilsCrossed, X } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { MapPicker, type Point } from "@/components/map-picker";
-import { Badge, Button, Card, Field, fieldClass } from "@/components/ui";
+import { Badge, Button, ButtonLink, Card, Field, fieldClass } from "@/components/ui";
 import { parseIdentifier } from "@/lib/auth";
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
@@ -357,6 +357,23 @@ function EstablishmentEditor({
         </form>
         {e && (
           <div className="space-y-6 border-t border-border p-5">
+            <div className="flex flex-wrap gap-2">
+              <ButtonLink href={`/espace/admin/etablissements/carte?id=${e.id}`} variant="soft">
+                <UtensilsCrossed className="size-4" aria-hidden /> Gérer la carte
+              </ButtonLink>
+              <Button
+                variant="outline"
+                className="text-danger"
+                onClick={async () => {
+                  if (!confirm(`Supprimer définitivement « ${e.name} » ? Un établissement qui a déjà des commandes se désactive plutôt.`)) return;
+                  const { error } = await db.rpc("admin_delete_restaurant", { p_id: e.id });
+                  if (error) return setError(errorMessage(error));
+                  onSaved();
+                }}
+              >
+                <Trash2 className="size-4" aria-hidden /> Supprimer
+              </Button>
+            </div>
             <Members establishmentId={e.id} />
             <AffiliatedCouriers establishmentId={e.id} zoneId={e.zone_id} />
           </div>
