@@ -1,5 +1,6 @@
 "use client";
 
+import { Drawer } from "./dialog";
 import Image from "next/image";
 import { useRef, useState, type FormEvent } from "react";
 import { ImagePlus, Plus, Trash2, X } from "lucide-react";
@@ -136,15 +137,8 @@ export function ProductEditor({
   const shownPhoto = preview ?? mediaUrl(photo);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <button type="button" aria-label="Fermer" onClick={onClose} className="absolute inset-0 bg-black/40" />
-      <form onSubmit={save} className="relative flex h-full w-full max-w-xl flex-col bg-surface shadow-float" aria-label={product ? "Modifier le produit" : "Nouveau produit"}>
-        <div className="flex items-center justify-between border-b border-border p-5">
-          <h2 className="text-xl font-extrabold">{product ? "Modifier le produit" : "Nouveau produit"}</h2>
-          <button type="button" onClick={onClose} aria-label="Fermer" className="grid size-9 place-items-center rounded-full hover:bg-surface-alt">
-            <X className="size-5" aria-hidden />
-          </button>
-        </div>
+    <Drawer title={product ? "Modifier le produit" : "Nouveau produit"} onClose={onClose}>
+      <form onSubmit={save} className="flex h-full flex-col">
 
         <div className="flex-1 space-y-5 overflow-y-auto p-5">
           <div className="flex items-center gap-4">
@@ -303,6 +297,6 @@ export function ProductEditor({
           </div>
         </div>
       </form>
-    </div>
+    </Drawer>
   );
 }

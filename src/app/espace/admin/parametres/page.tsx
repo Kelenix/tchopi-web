@@ -1,7 +1,8 @@
 "use client";
 
+import { Drawer } from "@/components/dialog";
 import { useEffect, useState, type FormEvent } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import { MapPicker, type Point } from "@/components/map-picker";
 import { Badge, Button, Card, Field, fieldClass } from "@/components/ui";
 import type { PlatformSettings } from "@/lib/admin";
@@ -197,15 +198,8 @@ function ZoneEditor({ zone, rules, onClose, onSaved }: { zone: Zone | null; rule
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <button type="button" aria-label="Fermer" onClick={onClose} className="absolute inset-0 bg-black/40" />
-      <form onSubmit={save} className="relative h-full w-full max-w-2xl space-y-5 overflow-y-auto bg-surface p-6 shadow-float">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-extrabold">{zone ? zone.name : "Nouvelle zone"}</h2>
-          <button type="button" onClick={onClose} aria-label="Fermer" className="grid size-9 place-items-center rounded-full hover:bg-surface-alt">
-            <X className="size-5" aria-hidden />
-          </button>
-        </div>
+    <Drawer title={zone ? zone.name : "Nouvelle zone"} onClose={onClose} wide>
+      <form onSubmit={save} className="space-y-5 p-6">
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Nom">
             <input name="name" required minLength={2} maxLength={60} defaultValue={zone?.name} className={fieldClass} />
@@ -256,6 +250,6 @@ function ZoneEditor({ zone, rules, onClose, onSaved }: { zone: Zone | null; rule
           {busy ? "Enregistrement…" : "Enregistrer la zone"}
         </Button>
       </form>
-    </div>
+    </Drawer>
   );
 }

@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Badge, Button, Card } from "@/components/ui";
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
+import { dialog } from "@/components/dialog";
 import { browserClient } from "@/lib/supabase";
 
 type Status = "pending" | "approved" | "rejected" | "suspended";
@@ -50,7 +51,17 @@ export default function AdminCouriersPage() {
   }, [db, tab, version]);
 
   async function setStatus(c: CourierRow, status: Status) {
-    const reason = status === "approved" ? null : prompt("Motif (communiqué au livreur)")?.trim();
+    const reason =
+      status === "approved"
+        ? null
+        : (
+            await dialog.prompt({
+              title: status === "rejected" ? "Refuser ce livreur" : "Suspendre ce livreur",
+              tone: "danger",
+              confirmLabel: status === "rejected" ? "Refuser" : "Suspendre",
+              fields: [{ name: "v", label: "Motif (communiqué au livreur)", type: "textarea", required: true }],
+            })
+          )?.v;
     if (status !== "approved" && !reason) return;
     const { error } = await db.rpc("admin_set_courier_status", { p_user_id: c.user_id, p_status: status, p_reason: reason });
     setError(error ? errorMessage(error) : null);

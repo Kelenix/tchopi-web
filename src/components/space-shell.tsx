@@ -58,19 +58,26 @@ const account = { title: "Compte", items: [{ href: "/espace/profil", label: "Mon
 
 /** Pages ouvertes à un compte admin : l'administration et son profil, jamais les espaces client ou livreur. */
 const adminAllowed = (path: string) => path.startsWith("/espace/admin") || path === "/espace/profil";
+/** Pages réservées aux clients (commandes passées, panier) : fermées aux comptes professionnels. */
+const clientOnly = (path: string) => path.startsWith("/espace/commandes") || path === "/espace/panier";
+const home = (roles: Roles) =>
+  roles.is_admin ? "/espace/admin" : roles.restaurant_ids.length ? "/espace/etablissement" : roles.courier_status ? "/espace/livreur" : null;
+const blocked = (roles: Roles, path: string) => (roles.is_admin ? !adminAllowed(path) : Boolean(home(roles)) && clientOnly(path));
 
 function navFor(roles: Roles): { title: string; items: NavItem[] }[] {
   // Séparation stricte (ADR-048) : l'admin supervise tout depuis l'administration, sans les espaces des autres rôles.
   if (roles.is_admin) return [adminNav, account];
-  const groups = [
-    {
+  // Un établissement ou un livreur n'a que ses espaces professionnels (ADR-049) ; l'espace Client est pour les autres.
+  const groups: { title: string; items: NavItem[] }[] = [];
+  if (!roles.restaurant_ids.length && !roles.courier_status) {
+    groups.push({
       title: "Client",
       items: [
         { href: "/espace/commandes", label: "Mes commandes", icon: ShoppingBag },
         { href: "/espace/profil", label: "Mon profil", icon: UserRound },
       ],
-    },
-  ];
+    });
+  }
   if (roles.restaurant_ids.length) {
     groups.push({
       title: "Établissement",
@@ -78,6 +85,7 @@ function navFor(roles: Roles): { title: string; items: NavItem[] }[] {
         { href: "/espace/etablissement", label: "Tableau de bord", icon: LayoutDashboard },
         { href: "/espace/etablissement/commandes", label: "Commandes", icon: ClipboardList },
         { href: "/espace/etablissement/produits", label: "Produits", icon: Package },
+        { href: "/espace/etablissement/livreurs", label: "Mes livreurs", icon: Bike },
         { href: "/espace/etablissement/statistiques", label: "Statistiques", icon: ChartColumn },
         { href: "/espace/etablissement/parametres", label: "Profil et horaires", icon: Settings },
       ],
@@ -86,6 +94,7 @@ function navFor(roles: Roles): { title: string; items: NavItem[] }[] {
   if (roles.courier_status) {
     groups.push({ title: "Livreur", items: [{ href: "/espace/livreur", label: "Mon activité", icon: Bike }] });
   }
+  if (!groups.some((g) => g.title === "Client")) groups.push(account);
   return groups;
 }
 
@@ -98,10 +107,10 @@ export function SpaceShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (session === null) router.replace(`/connexion?suite=${encodeURIComponent(pathname)}`);
-    else if (roles?.is_admin && !adminAllowed(pathname)) router.replace("/espace/admin");
+    else if (roles && blocked(roles, pathname)) router.replace(home(roles)!);
   }, [session, roles, router, pathname]);
 
-  if (!session || !roles || (roles.is_admin && !adminAllowed(pathname))) {
+  if (!session || !roles || blocked(roles, pathname)) {
     return (
       <div className="grid flex-1 place-items-center p-10 text-sm text-muted" aria-busy>
         {roles === null ? "Impossible de lire votre compte. Rechargez la page." : "Chargement de votre espace…"}

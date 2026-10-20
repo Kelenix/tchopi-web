@@ -9,7 +9,7 @@ import { Badge, Card } from "@/components/ui";
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import { paymentMethodLabel, paymentStatusLabel, type PaymentMethod, type PaymentStatus } from "@/lib/orders";
-import { useAdminRpc } from "@/lib/admin";
+import { useRpc } from "@/lib/use-rpc";
 import { bucketLabel, periodRange, presetPeriod, type Period } from "@/lib/period";
 import { browserClient } from "@/lib/supabase";
 
@@ -176,7 +176,7 @@ const outcomes = [
 function PaymentStats() {
   const [period, setPeriod] = useState<Period>(() => presetPeriod("month"));
   const range = periodRange(period);
-  const s = useAdminRpc<Stats>("admin_payment_stats", range);
+  const s = useRpc<Stats>("admin_payment_stats", range);
   return (
     <>
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4">

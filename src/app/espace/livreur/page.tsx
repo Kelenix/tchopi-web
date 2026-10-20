@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Bike, Smartphone } from "lucide-react";
+import { CourierAffiliations } from "@/components/courier-affiliations";
 import { EmptyState } from "@/components/empty-state";
 import { RequireRole, useAccount } from "@/components/space-shell";
 import { Badge, Card } from "@/components/ui";
@@ -38,7 +39,7 @@ export default function CourierPage() {
 }
 
 function Courier() {
-  const { roles } = useAccount();
+  const { roles, session } = useAccount();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [missions, setMissions] = useState<Mission[] | null>(null);
   useEffect(() => {
@@ -80,6 +81,10 @@ function Courier() {
           </Card>
         ))}
       </section>
+      <h2 className="mt-10 text-xl font-extrabold">Restaurants</h2>
+      <div className="mt-4">
+        <CourierAffiliations userId={session.user.id} approved={roles.courier_status === "approved"} />
+      </div>
       <h2 className="mt-10 text-xl font-extrabold">Historique des missions</h2>
       <div className="mt-4">
         {!missions ? (

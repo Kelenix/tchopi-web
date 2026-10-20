@@ -13,7 +13,10 @@ export type ManagedEstablishment = {
   description: string | null;
   category: string | null;
   cover_path: string | null;
+  logo_path: string | null;
   phone: string;
+  latitude: number;
+  longitude: number;
   district: string;
   landmark: string;
   commission_rate: number;

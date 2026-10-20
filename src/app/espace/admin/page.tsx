@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, Bike, Store, Wallet } from "lucide-react";
 import { BarList, ColumnChart, Kpi, PeriodPicker } from "@/components/admin-charts";
 import { Card } from "@/components/ui";
-import { orderAlerts, supervisedStatuses, useAdminRpc, type PlatformSettings } from "@/lib/admin";
+import { orderAlerts, supervisedStatuses, type PlatformSettings } from "@/lib/admin";
+import { useRpc } from "@/lib/use-rpc";
 import { formatMoney } from "@/lib/format";
 import { paymentMethodLabel, statusLabel, type Order, type OrderStatus, type PaymentMethod } from "@/lib/orders";
 import { bucketLabel, periodRange, presetPeriod, type Period } from "@/lib/period";
@@ -30,7 +31,7 @@ const count = (n: number) => new Intl.NumberFormat("fr-FR").format(Math.round(n)
 export default function AdminDashboard() {
   const [period, setPeriod] = useState<Period>(() => presetPeriod("week"));
   const range = periodRange(period);
-  const d = useAdminRpc<Dashboard>("admin_dashboard", range);
+  const d = useRpc<Dashboard>("admin_dashboard", range);
   const alerts = useAlertCount();
 
   const pts = (d?.series ?? []).map((s) => ({ label: bucketLabel(s.bucket, range.p_bucket), values: s }));

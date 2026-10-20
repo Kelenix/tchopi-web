@@ -19,6 +19,8 @@ const messages: Record<string, string> = {
   account_busy: "Ce compte a une commande en cours : attendez qu'elle soit terminée.",
   cannot_delete_admin: "Un compte administrateur ne peut pas être supprimé ici.",
   restaurant_has_orders: "Cet établissement a déjà des commandes : désactivez-le plutôt que de le supprimer.",
+  orders_in_progress: "Des commandes sont en cours : terminez-les d'abord.",
+  courier_not_approved: "Ce livreur n'est pas encore validé par l'équipe Tchopi.",
   period_too_long: "Période trop longue pour ce niveau de détail.",
 };
 
@@ -31,9 +33,3 @@ export function errorMessage(error: unknown): string {
   return "Une erreur est survenue. Réessayez dans un instant.";
 }
 
-/** Erreur d'une fonction serveur : le code métier est dans le corps de la réponse. */
-export async function functionErrorMessage(error: unknown): Promise<string> {
-  const context = (error as { context?: Response } | null)?.context;
-  const body = await context?.json?.().catch(() => null);
-  return errorMessage(body?.code ? { message: body.code } : error);
-}

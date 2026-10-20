@@ -1,5 +1,6 @@
 "use client";
 
+import { dialog } from "@/components/dialog";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { ArrowLeft, Bike, Check, KeyRound, Phone } from "lucide-react";
@@ -75,7 +76,7 @@ export default function TrackingPage({ params }: PageProps<"/espace/commandes/[i
     (["accepted", "preparing", "ready", "courier_assigned"].includes(o.status) && Boolean(o.dispatch_alerted_at) && !o.courier_id);
 
   async function cancel() {
-    if (!confirm("Annuler cette commande ?")) return;
+    if (!(await dialog.confirm({ title: "Annuler cette commande ?", body: "Le restaurant et le livreur éventuel sont prévenus.", tone: "danger", confirmLabel: "Annuler la commande" }))) return;
     setBusy(true);
     const { error } = await db.rpc("cancel_order", { p_order_id: o.id, p_reason: null });
     setBusy(false);

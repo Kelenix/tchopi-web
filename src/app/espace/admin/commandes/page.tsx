@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { AlertTriangle, ListChecks, Search, X } from "lucide-react";
+import { AlertTriangle, ListChecks, Search } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { ItemLines, StatusBadge, Timeline, useOrderItems } from "@/components/order-parts";
 import { Badge, Button, Card, fieldClass } from "@/components/ui";
@@ -9,6 +9,7 @@ import { alertLabel, orderAlerts, supervisedStatuses, type PlatformSettings } fr
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime, formatMoney, formatTime } from "@/lib/format";
 import { closeReasonLabel, courierLabel, isClosed, paymentLine, type Order } from "@/lib/orders";
+import { Drawer, dialog } from "@/components/dialog";
 import { browserClient } from "@/lib/supabase";
 
 type Candidate = {
@@ -153,7 +154,8 @@ function AdminOrderPanel({ order: o, onClose }: { order: Order; onClose: () => v
     if (error) setError(errorMessage(error));
     return !error;
   }
-  const ask = (question: string) => prompt(question)?.trim() || null;
+  const ask = async (title: string, label = "Motif") =>
+    (await dialog.prompt({ title, fields: [{ name: "v", label, required: true, type: "textarea" }] }))?.v || null;
 
   const canAssign = ["ready", "searching_courier", "courier_assigned", "accepted", "preparing"].includes(o.status);
   const canConfirm = o.status === "in_transit";
@@ -161,18 +163,8 @@ function AdminOrderPanel({ order: o, onClose }: { order: Order; onClose: () => v
   const canRequestRefund = o.payment_status === "paid" && ["cancelled", "rejected", "failed"].includes(o.status);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <button type="button" aria-label="Fermer" onClick={onClose} className="absolute inset-0 bg-black/40" />
-      <aside className="relative h-full w-full max-w-lg overflow-y-auto bg-surface shadow-float" aria-label={`Commande ${o.number}`}>
-        <div className="flex items-center justify-between border-b border-border p-5">
-          <div>
-            <h2 className="text-xl font-extrabold">{o.number}</h2>
-            <p className="text-xs text-muted">{formatDateTime(o.created_at)}</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Fermer" className="grid size-9 place-items-center rounded-full hover:bg-surface-alt">
-            <X className="size-5" aria-hidden />
-          </button>
-        </div>
+    <Drawer title={`${o.number} · ${formatDateTime(o.created_at)}`} onClose={onClose}>
+      <aside aria-label={`Commande ${o.number}`}>
         <div className="space-y-6 p-5">
           <StatusBadge order={o} />
           {o.close_reason && <p className="text-sm text-danger">Motif : {closeReasonLabel(o.close_reason)}</p>}
@@ -228,7 +220,7 @@ function AdminOrderPanel({ order: o, onClose }: { order: Order; onClose: () => v
                       className="h-9 px-3 text-xs"
                       disabled={busy}
                       onClick={async () => {
-                        const reason = ask("Motif de l'attribution manuelle");
+                        const reason = await ask("Motif de l'attribution manuelle");
                         if (reason && (await call("admin_assign_courier", { p_order_id: o.id, p_courier_id: c.user_id, p_reason: reason }))) setCandidates(null);
                       }}
                     >
@@ -243,8 +235,8 @@ function AdminOrderPanel({ order: o, onClose }: { order: Order; onClose: () => v
                 variant="outline"
                 className="w-full"
                 disabled={busy}
-                onClick={() => {
-                  const reason = ask("Livraison confirmée sans code : comment a-t-elle été vérifiée ?");
+                onClick={async () => {
+                  const reason = await ask("Livraison confirmée sans code : comment a-t-elle été vérifiée ?");
                   if (reason) call("admin_confirm_delivery", { p_order_id: o.id, p_reason: reason });
                 }}
               >
@@ -256,8 +248,8 @@ function AdminOrderPanel({ order: o, onClose }: { order: Order; onClose: () => v
                 variant="outline"
                 className="w-full text-danger"
                 disabled={busy}
-                onClick={() => {
-                  const reason = ask("Motif de l'annulation");
+                onClick={async () => {
+                  const reason = await ask("Motif de l'annulation");
                   if (reason) call("cancel_order", { p_order_id: o.id, p_reason: reason });
                 }}
               >
@@ -269,8 +261,8 @@ function AdminOrderPanel({ order: o, onClose }: { order: Order; onClose: () => v
                 variant="outline"
                 className="w-full"
                 disabled={busy}
-                onClick={() => {
-                  const reason = ask("Motif du remboursement");
+                onClick={async () => {
+                  const reason = await ask("Motif du remboursement");
                   if (reason) call("admin_request_refund", { p_order_id: o.id, p_reason: reason });
                 }}
               >
@@ -282,8 +274,8 @@ function AdminOrderPanel({ order: o, onClose }: { order: Order; onClose: () => v
                 variant="outline"
                 className="w-full"
                 disabled={busy}
-                onClick={() => {
-                  const reference = ask("Référence du remboursement effectué (opérateur, virement…)");
+                onClick={async () => {
+                  const reference = await ask("Marquer comme remboursée", "Référence du remboursement (opérateur, virement…)");
                   if (reference) call("admin_mark_refunded", { p_order_id: o.id, p_reference: reference });
                 }}
               >
@@ -303,6 +295,6 @@ function AdminOrderPanel({ order: o, onClose }: { order: Order; onClose: () => v
           </section>
         </div>
       </aside>
-    </div>
+    </Drawer>
   );
 }

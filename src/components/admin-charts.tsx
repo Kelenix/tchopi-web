@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Card, fieldClass } from "@/components/ui";
-import { periodChoices, presetPeriod, type Period } from "@/lib/period";
+import { adminPeriods, periodLabels, presetPeriod, type Period, type PeriodKey } from "@/lib/period";
 
 /**
  * Graphiques des statistiques admin, en SVG sans dépendance : colonnes fines à bout arrondi, grille discrète, info-bulle
@@ -187,11 +187,11 @@ export function Kpi({ label, value, sub }: { label: string; value: ReactNode; su
 }
 
 /** Filtre de période, au-dessus des graphiques : préréglages et dates libres. */
-export function PeriodPicker({ value, onChange }: { value: Period; onChange: (p: Period) => void }) {
+export function PeriodPicker({ value, onChange, choices = adminPeriods }: { value: Period; onChange: (p: Period) => void; choices?: PeriodKey[] }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div role="tablist" aria-label="Période" className="flex gap-1 overflow-x-auto rounded-full bg-surface-alt p-1">
-        {periodChoices.map(([key, label]) => (
+        {choices.map((key) => (
           <button
             key={key}
             role="tab"
@@ -199,7 +199,7 @@ export function PeriodPicker({ value, onChange }: { value: Period; onChange: (p:
             onClick={() => onChange(key === "custom" ? { ...value, key } : presetPeriod(key))}
             className={`h-9 shrink-0 rounded-full px-4 text-sm font-semibold ${value.key === key ? "bg-surface shadow-float" : "text-muted"}`}
           >
-            {label}
+            {periodLabels[key]}
           </button>
         ))}
       </div>

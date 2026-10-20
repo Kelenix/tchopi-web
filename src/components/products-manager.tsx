@@ -1,5 +1,6 @@
 "use client";
 
+import { dialog } from "./dialog";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -63,7 +64,7 @@ export function ProductsManager({ establishmentId }: { establishmentId: string }
   }
 
   async function addCategory() {
-    const name = prompt("Nom de la nouvelle catégorie (ex. Boissons, Plats, Épicerie)")?.trim();
+    const name = (await dialog.prompt({ title: "Nouvelle catégorie", confirmLabel: "Ajouter", fields: [{ name: "v", label: "Nom", placeholder: "Boissons, Plats, Épicerie…", required: true }] }))?.v;
     if (!name) return;
     await run(db.from("categories").insert({ restaurant_id: establishmentId, name, position: (categories?.length ?? 0) }));
   }
@@ -117,22 +118,22 @@ export function ProductsManager({ establishmentId }: { establishmentId: string }
                     {c.name}
                   </button>
                   {real && categories && (
-                    <span className="hidden gap-0.5 group-hover:flex">
+                    <span className="hidden gap-0.5 group-focus-within:flex group-hover:flex">
                       <IconButton label="Monter" disabled={index === 0} onClick={() => moveCategory(index, -1)} icon={ArrowUp} />
                       <IconButton label="Descendre" disabled={index === categories.length - 1} onClick={() => moveCategory(index, 1)} icon={ArrowDown} />
                       <IconButton
                         label="Renommer"
                         icon={Pencil}
-                        onClick={() => {
-                          const name = prompt("Nouveau nom", c.name)?.trim();
+                        onClick={async () => {
+                          const name = (await dialog.prompt({ title: "Renommer la catégorie", confirmLabel: "Renommer", fields: [{ name: "v", label: "Nom", defaultValue: c.name, required: true }] }))?.v;
                           if (name) run(db.from("categories").update({ name }).eq("id", c.id));
                         }}
                       />
                       <IconButton
                         label="Supprimer"
                         icon={Trash2}
-                        onClick={() => {
-                          if (confirm(`Supprimer la catégorie « ${c.name} » ? Ses produits passent « Sans catégorie ».`)) {
+                        onClick={async () => {
+                          if (await dialog.confirm({ title: `Supprimer « ${c.name} » ?`, body: "Ses produits passent « Sans catégorie ».", tone: "danger", confirmLabel: "Supprimer" })) {
                             if (filter === c.id) setFilter("all");
                             run(db.from("categories").delete().eq("id", c.id));
                           }
@@ -147,11 +148,23 @@ export function ProductsManager({ establishmentId }: { establishmentId: string }
         </Card>
 
         <div>
-          <label className="relative block max-w-sm">
-            <Search className="absolute left-4 top-3.5 size-4 text-muted" aria-hidden />
-            <span className="sr-only">Rechercher un produit</span>
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher un produit" className={`${fieldClass} pl-10`} />
-          </label>
+          {/* Recherche et catégorie sur une ligne (deux lignes sur petit écran), utilisables ensemble. */}
+          <div className="flex flex-wrap gap-3">
+            <label className="relative min-w-56 flex-[3]">
+              <Search className="absolute left-4 top-3.5 size-4 text-muted" aria-hidden />
+              <span className="sr-only">Rechercher un produit</span>
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher un produit…" className={`${fieldClass} pl-10`} />
+            </label>
+            <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Catégorie" className={`${fieldClass} min-w-44 flex-1`}>
+              <option value="all">Toutes les catégories</option>
+              {categories?.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+              <option value="none">Sans catégorie</option>
+            </select>
+          </div>
           <div className="mt-4">
             {!products ? (
               <div className="h-64 animate-pulse rounded-card bg-surface-alt" />
@@ -171,8 +184,8 @@ export function ProductsManager({ establishmentId }: { establishmentId: string }
                     category={categories?.find((c) => c.id === p.category_id)?.name}
                     onEdit={() => setEditing(p)}
                     onToggle={() => run(db.from("products").update({ is_available: !p.is_available }).eq("id", p.id!))}
-                    onArchive={() => {
-                      if (confirm(`Retirer « ${p.name} » de la carte ? Il reste dans l'historique des commandes.`)) {
+                    onArchive={async () => {
+                      if (await dialog.confirm({ title: `Retirer « ${p.name} » de la carte ?`, body: "Il reste dans l'historique des commandes.", tone: "danger", confirmLabel: "Retirer" })) {
                         run(db.from("products").update({ archived_at: new Date().toISOString() }).eq("id", p.id!));
                       }
                     }}

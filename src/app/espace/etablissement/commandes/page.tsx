@@ -1,25 +1,27 @@
 "use client";
 
+import { Drawer, dialog } from "@/components/dialog";
 import { useEffect, useMemo, useState } from "react";
-import { Bike, ClipboardList, Clock, MapPin, Search, X } from "lucide-react";
+import { Bike, ClipboardList, Clock, MapPin, Search } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { ItemLines, StatusBadge, Timeline, useOrderItems } from "@/components/order-parts";
 import { Button, Card, fieldClass } from "@/components/ui";
+import { PeriodPicker } from "@/components/admin-charts";
 import { counted, isToday, useEstablishment } from "@/lib/establishment";
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime, formatMoney, formatTime } from "@/lib/format";
 import { closeReasonLabel, courierLabel, isClosed, paymentLine, type Order, type OrderStatus } from "@/lib/orders";
+import { establishmentPeriods, periodRange, presetPeriod, type Period } from "@/lib/period";
 import { browserClient } from "@/lib/supabase";
 
 const ANSWER_DELAY_MS = 10 * 60_000;
-const tabs = ["Nouvelles", "En cours", "Terminées du jour", "Historique"] as const;
+const tabs = ["Nouvelles", "En cours", "Historique"] as const;
 type Tab = (typeof tabs)[number];
 
 export default function EstablishmentOrdersPage() {
-  const { orders, acknowledge } = useEstablishment();
+  const { id: establishmentId, orders, acknowledge } = useEstablishment();
   const [tab, setTab] = useState<Tab>("Nouvelles");
   const [selected, setSelected] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
   const [now, setNow] = useState(() => Date.now());
 
   // Comptes à rebours rafraîchis ; la page ouverte vaut accusé de réception des nouvelles commandes.
@@ -32,18 +34,13 @@ export default function EstablishmentOrdersPage() {
 
   const groups = useMemo(() => {
     const all = (orders ?? []).filter((o) => o.status !== "awaiting_payment");
-    const q = query.trim().toLowerCase();
     return {
       Nouvelles: all.filter((o) => o.status === "pending"),
       "En cours": all.filter((o) => !isClosed(o.status) && o.status !== "pending"),
-      "Terminées du jour": all.filter((o) => isClosed(o.status) && isToday(o.created_at)),
-      Historique: all.filter(
-        (o) => isClosed(o.status) && (!q || o.number.toLowerCase().includes(q) || o.recipient_name.toLowerCase().includes(q)),
-      ),
-    } satisfies Record<Tab, Order[]>;
-  }, [orders, query]);
+    };
+  }, [orders]);
 
-  const shown = groups[tab];
+  const shown = tab === "Historique" ? [] : groups[tab];
   const items = useOrderItems(shown.map((o) => o.id));
   const current = orders?.find((o) => o.id === selected) ?? null;
   const today = counted((orders ?? []).filter((o) => isToday(o.created_at)));
@@ -70,21 +67,15 @@ export default function EstablishmentOrdersPage() {
             className={`h-10 shrink-0 rounded-full px-4 text-sm font-semibold transition ${tab === t ? "bg-surface text-ink shadow-float" : "text-muted"}`}
           >
             {t}
-            {t !== "Historique" && t !== "Terminées du jour" && groups[t].length > 0 ? ` (${groups[t].length})` : ""}
+            {t !== "Historique" && groups[t].length > 0 ? ` (${groups[t].length})` : ""}
           </button>
         ))}
       </div>
 
-      {tab === "Historique" && (
-        <label className="relative mt-4 block max-w-sm">
-          <Search className="absolute left-4 top-3.5 size-4 text-muted" aria-hidden />
-          <span className="sr-only">Rechercher une commande</span>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Numéro ou client" className={`${fieldClass} pl-10`} />
-        </label>
-      )}
-
       <div className="mt-6">
-        {!orders ? (
+        {tab === "Historique" ? (
+          <History establishmentId={establishmentId} now={now} />
+        ) : !orders ? (
           <div className="grid gap-4 md:grid-cols-2">
             {[0, 1].map((i) => (
               <div key={i} className="h-56 animate-pulse rounded-card bg-surface-alt" />
@@ -93,7 +84,7 @@ export default function EstablishmentOrdersPage() {
         ) : shown.length === 0 ? (
           <EmptyState
             icon={ClipboardList}
-            title={{ Nouvelles: "Aucune nouvelle commande", "En cours": "Aucune commande en cours", "Terminées du jour": "Rien de terminé aujourd'hui", Historique: "Aucune commande sur 30 jours" }[tab]}
+            title={tab === "Nouvelles" ? "Aucune nouvelle commande" : "Aucune commande en cours"}
             body={tab === "Nouvelles" ? "Les commandes arrivent ici en direct, avec une alerte sonore." : undefined}
           />
         ) : (
@@ -108,6 +99,111 @@ export default function EstablishmentOrdersPage() {
       </div>
 
       {current && <OrderPanel order={current} items={items[current.id]} onClose={() => setSelected(null)} />}
+    </>
+  );
+}
+
+const PAGE = 24;
+const statusFilters: [string, string, OrderStatus[] | null][] = [
+  ["all", "Tous les statuts", null],
+  ["pending", "En attente", ["pending"]],
+  ["accepted", "Acceptées", ["accepted"]],
+  ["preparing", "En préparation", ["preparing"]],
+  ["ready", "Prêtes", ["ready"]],
+  ["delivery", "En livraison", ["courier_assigned", "picked_up", "in_transit"]],
+  ["delivered", "Livrées", ["delivered"]],
+  ["cancelled", "Annulées ou refusées", ["rejected", "cancelled", "failed"]],
+];
+
+/** Historique complet, filtré et paginé par le serveur (RLS : seulement les commandes de l'établissement). */
+function History({ establishmentId, now }: { establishmentId: string; now: number }) {
+  const [period, setPeriod] = useState<Period>(() => presetPeriod("day"));
+  const [status, setStatus] = useState("all");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
+  const [result, setResult] = useState<{ key: string; rows: Order[]; total: number } | null>(null);
+  const [selected, setSelected] = useState<Order | null>(null);
+  const { p_from, p_to } = periodRange(period);
+  const key = JSON.stringify([establishmentId, p_from, p_to, status, query, page]);
+
+  useEffect(() => {
+    let alive = true;
+    const [, from, to, st, q, pg] = JSON.parse(key) as [string, string, string, string, string, number];
+    let request = browserClient()
+      .from("orders")
+      .select("*", { count: "exact" })
+      .eq("restaurant_id", establishmentId)
+      .neq("status", "awaiting_payment")
+      .gte("created_at", from)
+      .lt("created_at", to);
+    const statuses = statusFilters.find(([k]) => k === st)?.[2];
+    if (statuses) request = request.in("status", statuses);
+    const number = q.trim().replace(/[%,()]/g, "");
+    if (number) request = request.ilike("number", `%${number}%`);
+    request
+      .order("created_at", { ascending: false })
+      .range(pg * PAGE, pg * PAGE + PAGE - 1)
+      .then(({ data, count }) => alive && setResult({ key, rows: (data ?? []) as Order[], total: count ?? 0 }));
+    return () => {
+      alive = false;
+    };
+  }, [establishmentId, key]);
+
+  const current = result?.key === key ? result : null;
+  const items = useOrderItems((current?.rows ?? []).map((o) => o.id));
+  const pages = Math.max(1, Math.ceil((current?.total ?? 0) / PAGE));
+  const reset = <T,>(set: (v: T) => void) => (v: T) => {
+    set(v);
+    setPage(0);
+  };
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-3">
+        <PeriodPicker value={period} onChange={reset(setPeriod)} choices={establishmentPeriods} />
+        <select value={status} onChange={(e) => reset(setStatus)(e.target.value)} aria-label="Statut" className={`${fieldClass} h-9 w-auto`}>
+          {statusFilters.map(([k, label]) => (
+            <option key={k} value={k}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <label className="relative min-w-48 flex-1">
+          <Search className="absolute left-3 top-2.5 size-4 text-muted" aria-hidden />
+          <span className="sr-only">Numéro de commande</span>
+          <input value={query} onChange={(e) => reset(setQuery)(e.target.value)} placeholder="N° de commande" className={`${fieldClass} h-9 pl-9`} />
+        </label>
+      </div>
+      <p className="mt-4 text-sm text-muted">{current ? `${current.total} commande${current.total > 1 ? "s" : ""}` : "Chargement…"}</p>
+      <div className="mt-3">
+        {!current ? (
+          <div className="h-56 animate-pulse rounded-card bg-surface-alt" />
+        ) : current.rows.length === 0 ? (
+          <EmptyState icon={ClipboardList} title="Aucune commande" body="Aucune commande ne correspond à ces filtres sur la période." />
+        ) : (
+          <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {current.rows.map((o) => (
+              <li key={o.id}>
+                <OrderCard order={o} items={items[o.id]} now={now} onOpen={() => setSelected(o)} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      {pages > 1 && (
+        <nav aria-label="Pages" className="mt-6 flex items-center justify-center gap-3 text-sm">
+          <Button variant="outline" className="h-9 px-4" disabled={page === 0} onClick={() => setPage(page - 1)}>
+            Précédentes
+          </Button>
+          <span className="tabular text-muted">
+            Page {page + 1} / {pages}
+          </span>
+          <Button variant="outline" className="h-9 px-4" disabled={page + 1 >= pages} onClick={() => setPage(page + 1)}>
+            Suivantes
+          </Button>
+        </nav>
+      )}
+      {selected && <OrderPanel order={selected} items={items[selected.id]} onClose={() => setSelected(null)} />}
     </>
   );
 }
@@ -144,9 +240,9 @@ function Actions({ order }: { order: Order }) {
             variant="ghost"
             disabled={busy}
             className="h-9 px-3 text-xs"
-            onClick={() => {
-              const r = prompt("Motif du refus");
-              if (r?.trim()) move(order, "rejected", r.trim());
+            onClick={async () => {
+              const r = await dialog.prompt({ title: "Refuser la commande", tone: "danger", confirmLabel: "Refuser", fields: [{ name: "v", label: "Motif (communiqué au client)", type: "textarea", required: true }] });
+              if (r?.v) move(order, "rejected", r.v);
             }}
           >
             Autre motif…
@@ -243,18 +339,8 @@ function OrderCard({ order: o, items, now, onOpen }: { order: Order; items: Para
 
 function OrderPanel({ order: o, items, onClose }: { order: Order; items: Parameters<typeof ItemLines>[0]["items"]; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <button type="button" aria-label="Fermer" onClick={onClose} className="absolute inset-0 bg-black/40" />
-      <aside className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface shadow-float" aria-label={`Commande ${o.number}`}>
-        <div className="flex items-center justify-between border-b border-border p-5">
-          <div>
-            <h2 className="text-xl font-extrabold">{o.number}</h2>
-            <p className="text-xs text-muted">{formatDateTime(o.created_at)}</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Fermer" className="grid size-9 place-items-center rounded-full hover:bg-surface-alt">
-            <X className="size-5" aria-hidden />
-          </button>
-        </div>
+    <Drawer title={`${o.number} · ${formatDateTime(o.created_at)}`} onClose={onClose}>
+      <aside className="flex flex-col" aria-label={`Commande ${o.number}`}>
         <div className="space-y-6 p-5">
           <StatusBadge order={o} />
           <section>
@@ -285,6 +371,6 @@ function OrderPanel({ order: o, items, onClose }: { order: Order; items: Paramet
           <Actions order={o} />
         </div>
       </aside>
-    </div>
+    </Drawer>
   );
 }

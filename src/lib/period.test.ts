@@ -10,6 +10,11 @@ describe("périodes des statistiques admin", () => {
     expect(periodRange(p)).toEqual({ p_from: "2026-10-14T00:00:00.000Z", p_to: "2026-10-21T00:00:00.000Z", p_bucket: "day" });
   });
 
+  it("mois précédent et hier", () => {
+    expect(presetPeriod("prev_month", today)).toMatchObject({ from: "2026-09-01", to: "2026-09-30" });
+    expect(presetPeriod("yesterday", today)).toMatchObject({ from: "2026-10-19", to: "2026-10-19" });
+  });
+
   it("le pas suit la durée : heure, jour, semaine, mois", () => {
     expect(periodRange(presetPeriod("day", today)).p_bucket).toBe("hour");
     expect(periodRange(presetPeriod("year", today)).p_bucket).toBe("week");

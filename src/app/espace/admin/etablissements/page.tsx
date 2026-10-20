@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, type FormEvent } from "react";
-import { Check, Plus, Store, Trash2, UtensilsCrossed, X } from "lucide-react";
+import { Check, Plus, Store, Trash2, UtensilsCrossed } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { MapPicker, type Point } from "@/components/map-picker";
 import { Badge, Button, ButtonLink, Card, Field, fieldClass } from "@/components/ui";
@@ -10,6 +10,7 @@ import { parseIdentifier } from "@/lib/auth";
 import { errorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 import { normalizePhone } from "@/lib/phone";
+import { Drawer, dialog, orThrow } from "@/components/dialog";
 import { browserClient } from "@/lib/supabase";
 
 type Zone = { id: string; name: string; city: string; center_lat: number; center_lng: number };
@@ -155,15 +156,22 @@ function PendingRestaurants({ items, zones, onChange }: { items: Establishment[]
   const [error, setError] = useState<string | null>(null);
   if (!items.length) return <EmptyState icon={Store} title="Aucun restaurant à valider" body="Les inscriptions faites sur le site arrivent ici." />;
   async function review(e: Establishment, approved: boolean) {
-    const commission = approved ? Number(prompt(`Commission pour ${e.name} (%)`, "15")) : null;
-    if (approved && (!Number.isFinite(commission) || commission! < 0 || commission! > 100)) return;
-    const reason = approved ? null : prompt("Motif du refus (communiqué au gérant)")?.trim();
-    if (!approved && !reason) return;
+    const values = await dialog.prompt(
+      approved
+        ? {
+            title: `Valider ${e.name}`,
+            body: "Le restaurant devient visible des clients.",
+            confirmLabel: "Valider",
+            fields: [{ name: "commission", label: "Commission (%)", type: "number", defaultValue: "15", min: 0, max: 100, required: true }],
+          }
+        : { title: `Refuser ${e.name}`, tone: "danger", confirmLabel: "Refuser", fields: [{ name: "reason", label: "Motif (communiqué au gérant)", type: "textarea", required: true }] },
+    );
+    if (!values) return;
     const { error } = await browserClient().rpc("admin_review_restaurant", {
       p_id: e.id,
       p_approved: approved,
-      p_commission_rate: commission,
-      p_reason: reason,
+      p_commission_rate: approved ? Number(values.commission) : null,
+      p_reason: approved ? null : values.reason,
     });
     setError(error ? errorMessage(error) : null);
     onChange();
@@ -300,15 +308,8 @@ function EstablishmentEditor({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <button type="button" aria-label="Fermer" onClick={onClose} className="absolute inset-0 bg-black/40" />
-      <div className="relative h-full w-full max-w-2xl overflow-y-auto bg-surface shadow-float">
-        <div className="flex items-center justify-between border-b border-border p-5">
-          <h2 className="text-xl font-extrabold">{e ? e.name : "Nouvel établissement"}</h2>
-          <button type="button" onClick={onClose} aria-label="Fermer" className="grid size-9 place-items-center rounded-full hover:bg-surface-alt">
-            <X className="size-5" aria-hidden />
-          </button>
-        </div>
+    <Drawer title={e ? e.name : "Nouvel établissement"} onClose={onClose} wide>
+      <div>
         <form onSubmit={save} className="grid gap-4 p-5 sm:grid-cols-2">
           <Field label="Nom">
             <input name="name" required minLength={2} maxLength={80} defaultValue={e?.name} className={fieldClass} />
@@ -365,9 +366,14 @@ function EstablishmentEditor({
                 variant="outline"
                 className="text-danger"
                 onClick={async () => {
-                  if (!confirm(`Supprimer définitivement « ${e.name} » ? Un établissement qui a déjà des commandes se désactive plutôt.`)) return;
-                  const { error } = await db.rpc("admin_delete_restaurant", { p_id: e.id });
-                  if (error) return setError(errorMessage(error));
+                  const done = await dialog.confirm({
+                    title: `Supprimer « ${e.name} » ?`,
+                    body: "Suppression définitive. Un établissement qui a déjà des commandes se désactive plutôt.",
+                    tone: "danger",
+                    confirmLabel: "Supprimer",
+                    action: () => orThrow(db.rpc("admin_delete_restaurant", { p_id: e.id })),
+                  });
+                  if (!done) return;
                   onSaved();
                 }}
               >
@@ -379,7 +385,7 @@ function EstablishmentEditor({
           </div>
         )}
       </div>
-    </div>
+    </Drawer>
   );
 }
 
@@ -427,7 +433,7 @@ function Members({ establishmentId }: { establishmentId: string }) {
               type="button"
               aria-label="Retirer ce gérant"
               onClick={async () => {
-                if (!confirm("Retirer l'accès de ce gérant ?")) return;
+                if (!(await dialog.confirm({ title: "Retirer l'accès de ce gérant ?", tone: "danger", confirmLabel: "Retirer" }))) return;
                 const { error } = await db.rpc("admin_remove_member", { p_member_id: m.id });
                 setError(error ? errorMessage(error) : null);
                 setVersion((v) => v + 1);

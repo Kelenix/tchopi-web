@@ -1,5 +1,6 @@
 "use client";
 
+import { dialog } from "./dialog";
 import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, ShoppingBag, X } from "lucide-react";
@@ -72,12 +73,16 @@ export function Menu({ establishment }: { establishment: EstablishmentDetail }) 
     </>
   );
 
-  function add(p: Product, options: CartOption[], quantity = 1) {
+  async function add(p: Product, options: CartOption[], quantity = 1) {
     if (
       current &&
       current.establishmentId !== establishment.id &&
       current.lines.length &&
-      !confirm(`Votre panier contient des produits de ${current.establishmentName}. Le remplacer ?`)
+      !(await dialog.confirm({
+        title: "Remplacer votre panier ?",
+        body: `Votre panier contient des produits de ${current.establishmentName}. Une commande ne concerne qu'un restaurant.`,
+        confirmLabel: "Remplacer",
+      }))
     ) {
       return;
     }

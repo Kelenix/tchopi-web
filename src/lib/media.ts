@@ -17,7 +17,7 @@ async function shrink(file: File, max = 800): Promise<Blob> {
 }
 
 /** Envoie une photo d'établissement ou de produit (bucket public « media », dossier de l'établissement). */
-export async function uploadEstablishmentImage(establishmentId: string, file: File, kind: "cover" | "product"): Promise<string> {
+export async function uploadEstablishmentImage(establishmentId: string, file: File, kind: "cover" | "logo" | "product"): Promise<string> {
   const blob = await shrink(file);
   const path = `restaurants/${establishmentId}/${kind}-${Date.now()}.jpg`;
   const { error } = await browserClient().storage.from("media").upload(path, blob, { contentType: "image/jpeg" });

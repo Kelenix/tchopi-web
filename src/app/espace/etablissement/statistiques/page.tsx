@@ -1,168 +1,75 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
+import { BarList, ColumnChart, Kpi, PeriodPicker } from "@/components/admin-charts";
 import { Card } from "@/components/ui";
-import { counted, useEstablishment } from "@/lib/establishment";
+import { useEstablishment } from "@/lib/establishment";
 import { formatMoney } from "@/lib/format";
-import { statusLabel, type OrderStatus } from "@/lib/orders";
-import { browserClient } from "@/lib/supabase";
+import { paymentMethodLabel, statusLabel, type OrderStatus, type PaymentMethod } from "@/lib/orders";
+import { bucketLabel, establishmentPeriods, periodRange, presetPeriod, type Period } from "@/lib/period";
+import { useEstablishmentStats } from "@/lib/use-rpc";
 
-type Sold = { name: string; quantity: number; line_total: number };
-const periods = [7, 30] as const;
+const count = (n: number) => new Intl.NumberFormat("fr-FR").format(n);
 
+/** Statistiques : une seule source (restaurant_stats) pour les indicateurs, les graphiques et les tableaux de la période. */
 export default function StatsPage() {
-  const { id, orders } = useEstablishment();
-  const [days, setDays] = useState<(typeof periods)[number]>(7);
-  const [sold, setSold] = useState<{ key: string; rows: Sold[] } | null>(null);
-  const since = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() - (days - 1));
-    return d;
-  }, [days]);
-  const key = `${id}-${days}`;
-
-  // Produits vendus sur la période (commandes livrées), lus avec les droits du gérant.
-  useEffect(() => {
-    let alive = true;
-    browserClient()
-      .from("order_items")
-      .select("name, quantity, line_total, orders!inner(restaurant_id, status, created_at)")
-      .eq("orders.restaurant_id", id)
-      .eq("orders.status", "delivered")
-      .gte("orders.created_at", since.toISOString())
-      .limit(5000)
-      .then(({ data }) => alive && setSold({ key, rows: (data ?? []) as unknown as Sold[] }));
-    return () => {
-      alive = false;
-    };
-  }, [id, since, key]);
-
-  const inPeriod = (orders ?? []).filter((o) => new Date(o.created_at) >= since);
-  const valid = counted(inPeriod);
-  const sales = valid.reduce((n, o) => n + o.subtotal, 0);
-  const commission = valid.reduce((n, o) => n + o.commission_amount, 0);
-  const byStatus = Object.entries(
-    inPeriod.reduce<Record<string, number>>((acc, o) => ({ ...acc, [o.status]: (acc[o.status] ?? 0) + 1 }), {}),
-  ).sort((a, b) => b[1] - a[1]);
-  const perDay = Array.from({ length: days }, (_, i) => {
-    const d = new Date(since);
-    d.setDate(d.getDate() + i);
-    const label = d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" });
-    const total = valid.filter((o) => new Date(o.created_at).toDateString() === d.toDateString()).reduce((n, o) => n + o.subtotal, 0);
-    return { label, total };
-  });
-  const max = Math.max(1, ...perDay.map((d) => d.total));
-  const top = Object.values(
-    (sold?.key === key ? sold.rows : []).reduce<Record<string, Sold>>((acc, r) => {
-      const name = r.name.replace(/ \(.*\)$/, "");
-      acc[name] = { name, quantity: (acc[name]?.quantity ?? 0) + r.quantity, line_total: (acc[name]?.line_total ?? 0) + r.line_total };
-      return acc;
-    }, {}),
-  )
-    .sort((a, b) => b.quantity - a.quantity)
-    .slice(0, 8);
+  const { id } = useEstablishment();
+  const [period, setPeriod] = useState<Period>(() => presetPeriod("week"));
+  const range = periodRange(period);
+  const s = useEstablishmentStats(id, range);
+  const points = (s?.series ?? []).map((p) => ({ label: bucketLabel(p.bucket, range.p_bucket), values: p }));
 
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h1 className="font-display text-4xl leading-tight sm:text-5xl">Statistiques</h1>
-        <div role="tablist" aria-label="Période" className="flex gap-1 rounded-full bg-surface-alt p-1">
-          {periods.map((p) => (
-            <button key={p} role="tab" aria-selected={days === p} onClick={() => setDays(p)} className={`h-9 rounded-full px-4 text-sm font-semibold ${days === p ? "bg-surface shadow-float" : "text-muted"}`}>
-              {p} jours
-            </button>
-          ))}
-        </div>
+        <PeriodPicker value={period} onChange={setPeriod} choices={establishmentPeriods} />
       </div>
 
       <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          ["Commandes", String(valid.length)],
-          ["Ventes", formatMoney(sales)],
-          ["Commission", formatMoney(commission)],
-          ["Panier moyen", formatMoney(valid.length ? Math.round(sales / valid.length) : 0)],
-        ].map(([label, value]) => (
-          <Card key={label} className="p-5">
-            <p className="text-sm text-muted">{label}</p>
-            <p className="tabular mt-1 text-2xl font-extrabold">{orders ? value : "…"}</p>
-          </Card>
-        ))}
+        <Kpi label="Commandes" value={s ? count(s.orders) : "…"} sub={s && `${count(s.delivered)} livrées · ${count(s.cancelled)} annulées`} />
+        <Kpi label="Ventes (produits)" value={s ? formatMoney(s.sales) : "…"} />
+        <Kpi label="Commission Tchopi" value={s ? formatMoney(s.commission) : "…"} sub={s && `Net ${formatMoney(s.sales - s.commission)}`} />
+        <Kpi label="Panier moyen" value={s ? formatMoney(s.average_basket) : "…"} />
       </section>
 
-      <Card className="mt-6 p-6">
-        <h2 className="font-bold">Ventes par jour</h2>
-        <p className="text-sm text-muted">Montant des produits, commandes ni refusées ni annulées.</p>
-        <div className="mt-6 flex h-48 items-end gap-1.5 border-b border-border" role="img" aria-label="Ventes par jour, détail dans le tableau ci-dessous">
-          {perDay.map((d) => (
-            <div key={d.label} className="group relative flex h-full flex-1 flex-col justify-end">
-              <div
-                className="rounded-t bg-primary transition-opacity group-hover:opacity-80"
-                style={{ height: `${(d.total / max) * 100}%`, minHeight: d.total ? 4 : 0 }}
-              />
-              <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-chip bg-ink px-2 py-1 text-xs font-semibold text-on-ink group-hover:block">
-                {d.label} · <span className="tabular">{formatMoney(d.total)}</span>
-              </span>
-            </div>
-          ))}
-        </div>
-        <div className="mt-2 flex gap-1.5 text-[10px] text-muted">
-          {perDay.map((d, i) => (
-            <span key={d.label} className="flex-1 truncate text-center">
-              {days === 7 || i % 5 === 0 ? d.label : ""}
-            </span>
-          ))}
-        </div>
-        <details className="mt-4 text-sm">
-          <summary className="cursor-pointer font-semibold text-muted">Voir le tableau</summary>
-          <table className="mt-3 w-full">
-            <tbody>
-              {perDay.map((d) => (
-                <tr key={d.label} className="border-b border-border">
-                  <td className="py-1.5">{d.label}</td>
-                  <td className="tabular py-1.5 text-right">{formatMoney(d.total)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </details>
-      </Card>
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <ColumnChart title="Ventes" series={[{ key: "sales", label: "Ventes", color: "var(--series-1)" }]} points={points} format={formatMoney} />
+        <ColumnChart title="Commandes" series={[{ key: "orders", label: "Commandes", color: "var(--series-1)" }]} points={points} format={count} />
+      </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Card className="p-6">
-          <h2 className="font-bold">Produits les plus vendus</h2>
-          <p className="text-sm text-muted">Commandes livrées sur la période.</p>
-          {top.length ? (
-            <ol className="mt-4 space-y-2">
-              {top.map((p, i) => (
-                <li key={p.name} className="flex items-center gap-3 text-sm">
-                  <span className="tabular w-5 text-muted">{i + 1}</span>
-                  <span className="flex-1 truncate font-semibold">{p.name}</span>
-                  <span className="tabular text-muted">× {p.quantity}</span>
-                  <span className="tabular w-24 text-right">{formatMoney(p.line_total)}</span>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="mt-4 text-sm text-muted">Aucune commande livrée sur la période.</p>
-          )}
+      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+        <BarList
+          title="Produits les plus vendus"
+          rows={(s?.top_products ?? []).map((p) => ({ label: p.name, value: p.quantity, sub: formatMoney(p.amount) }))}
+          format={(n) => `× ${count(n)}`}
+          empty="Aucune commande livrée sur la période."
+        />
+        <Card className="p-5">
+          <h3 className="font-bold">Commandes par statut</h3>
+          <StatTable rows={Object.entries(s?.by_status ?? {}).map(([k, n]) => [statusLabel(k as OrderStatus), n])} />
         </Card>
-        <Card className="p-6">
-          <h2 className="font-bold">Commandes par statut</h2>
-          {byStatus.length ? (
-            <ul className="mt-4 space-y-2 text-sm">
-              {byStatus.map(([status, n]) => (
-                <li key={status} className="flex justify-between gap-3">
-                  <span>{statusLabel(status as OrderStatus)}</span>
-                  <span className="tabular font-semibold">{n}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-4 text-sm text-muted">Aucune commande sur la période.</p>
-          )}
+        <Card className="p-5">
+          <h3 className="font-bold">Par moyen de paiement</h3>
+          <StatTable rows={Object.entries(s?.by_method ?? {}).map(([k, n]) => [paymentMethodLabel[k as PaymentMethod], n])} />
         </Card>
       </div>
     </>
+  );
+}
+
+function StatTable({ rows }: { rows: [string, number][] }) {
+  if (!rows.length) return <p className="mt-3 text-sm text-muted">Aucune commande sur la période.</p>;
+  return (
+    <ul className="mt-3 space-y-1.5 text-sm">
+      {rows
+        .sort((a, b) => b[1] - a[1])
+        .map(([label, n]) => (
+          <li key={label} className="flex justify-between gap-3">
+            <span>{label}</span>
+            <span className="tabular font-semibold">{count(n)}</span>
+          </li>
+        ))}
+    </ul>
   );
 }

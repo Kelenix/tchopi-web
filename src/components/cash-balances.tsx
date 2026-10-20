@@ -1,10 +1,10 @@
 "use client";
 
+import { dialog, orThrow } from "./dialog";
 import { useEffect, useState } from "react";
 import { Bike } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { Button, Card } from "@/components/ui";
-import { errorMessage } from "@/lib/errors";
 import { formatMoney } from "@/lib/format";
 import { browserClient } from "@/lib/supabase";
 
@@ -34,12 +34,19 @@ function CashTable({ balances, onRecorded }: { balances: Balance[]; onRecorded: 
   const [error, setError] = useState<string | null>(null);
   if (!balances.length) return <EmptyState icon={Bike} title="Aucune espèce à reverser" body="Les espèces encaissées par les livreurs apparaissent ici jusqu'à leur versement." />;
   async function record(b: Balance) {
-    const amount = Number(prompt(`Montant versé par ${b.first_name ?? "le livreur"} (F)`, String(b.due))?.replace(/\s/g, ""));
-    if (!Number.isInteger(amount) || amount <= 0) return;
-    const reference = prompt("Référence du versement (facultatif)")?.trim() || null;
-    const { error } = await browserClient().rpc("admin_record_cash_remittance", { p_courier_id: b.courier_id, p_amount: amount, p_reference: reference });
-    setError(error ? errorMessage(error) : null);
-    onRecorded();
+    const done = await dialog.prompt({
+      title: `Versement de ${[b.first_name, b.last_name].filter(Boolean).join(" ") || "ce livreur"}`,
+      body: `Dû actuellement : ${formatMoney(b.due)}.`,
+      confirmLabel: "Enregistrer",
+      fields: [
+        { name: "amount", label: "Montant versé (F)", type: "number", defaultValue: String(b.due), min: 1, max: b.due, required: true },
+        { name: "reference", label: "Référence (facultatif)", placeholder: "Reçu, transaction Mobile Money…" },
+      ],
+      action: (v) =>
+        orThrow(browserClient().rpc("admin_record_cash_remittance", { p_courier_id: b.courier_id, p_amount: Math.round(Number(v.amount)), p_reference: v.reference || null })),
+    });
+    setError(null);
+    if (done) onRecorded();
   }
   return (
     <Card className="overflow-x-auto">

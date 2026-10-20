@@ -4,20 +4,23 @@ import Link from "next/link";
 import { useState } from "react";
 import { AlertTriangle, Bike, ChefHat, ClipboardCheck, Package, Plus, Power } from "lucide-react";
 import { Badge, Button, ButtonLink, Card } from "@/components/ui";
-import { counted, isToday, useEstablishment } from "@/lib/establishment";
+import { ColumnChart, Kpi, PeriodPicker } from "@/components/admin-charts";
+import { useEstablishment } from "@/lib/establishment";
 import { errorMessage } from "@/lib/errors";
 import { formatMoney } from "@/lib/format";
 import { isClosed } from "@/lib/orders";
+import { bucketLabel, establishmentPeriods, periodRange, presetPeriod, type Period } from "@/lib/period";
 import { browserClient } from "@/lib/supabase";
+import { useEstablishmentStats } from "@/lib/use-rpc";
 
 export default function EstablishmentDashboard() {
   const { establishment: e, orders, reload } = useEstablishment();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const today = counted((orders ?? []).filter((o) => isToday(o.created_at)));
-  const sales = today.reduce((n, o) => n + o.subtotal, 0);
-  const commission = today.reduce((n, o) => n + o.commission_amount, 0);
+  const [period, setPeriod] = useState<Period>(() => presetPeriod("day"));
+  const range = periodRange(period);
+  const stats = useEstablishmentStats(e?.id ?? "", range);
   const active = (orders ?? []).filter((o) => !isClosed(o.status));
   const priorities = [
     { n: active.filter((o) => o.status === "pending").length, label: "à accepter", icon: ClipboardCheck, tone: "warning" as const },
@@ -70,19 +73,24 @@ export default function EstablishmentDashboard() {
         </Card>
       )}
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          ["Commandes du jour", String(today.length)],
-          ["Ventes du jour", formatMoney(sales)],
-          [`Commission (${e?.commission_rate ?? "…"} %)`, formatMoney(commission)],
-          ["Net du jour", formatMoney(sales - commission)],
-        ].map(([label, value], i) => (
-          <Card key={label} className={`p-5 ${i === 3 ? "bg-primary text-on-primary" : ""}`}>
-            <p className={`text-sm ${i === 3 ? "opacity-80" : "text-muted"}`}>{label}</p>
-            <p className="tabular mt-1 text-2xl font-extrabold">{orders ? value : "…"}</p>
-          </Card>
-        ))}
+      <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-xl font-extrabold">Activité</h2>
+        <PeriodPicker value={period} onChange={setPeriod} choices={establishmentPeriods} />
+      </div>
+      <section className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Kpi label="Commandes" value={stats ? String(stats.orders) : "…"} sub={stats && `${stats.delivered} livrées`} />
+        <Kpi label="Ventes" value={stats ? formatMoney(stats.sales) : "…"} />
+        <Kpi label={`Commission (${e?.commission_rate ?? "…"} %)`} value={stats ? formatMoney(stats.commission) : "…"} />
+        <Kpi label="Net" value={stats ? formatMoney(stats.sales - stats.commission) : "…"} sub={stats && `Panier moyen ${formatMoney(stats.average_basket)}`} />
       </section>
+      <div className="mt-4">
+        <ColumnChart
+          title="Ventes sur la période"
+          series={[{ key: "sales", label: "Ventes", color: "var(--series-1)" }]}
+          points={(stats?.series ?? []).map((p) => ({ label: bucketLabel(p.bucket, range.p_bucket), values: p }))}
+          format={formatMoney}
+        />
+      </div>
 
       <section className="mt-10">
         <h2 className="text-xl font-extrabold">Actions prioritaires</h2>

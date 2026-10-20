@@ -4,7 +4,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Search, Users } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { Badge, Button, Card, fieldClass } from "@/components/ui";
-import { errorMessage, functionErrorMessage } from "@/lib/errors";
+import { dialog, orThrow } from "@/components/dialog";
+import { errorMessage } from "@/lib/errors";
 import { browserClient } from "@/lib/supabase";
 
 type Profile = { id: string; first_name: string | null; last_name: string | null; phone: string | null; city: string | null; is_suspended: boolean };
@@ -31,7 +32,9 @@ export default function AdminUsersPage() {
   }, [db, query, version]);
 
   async function toggle(u: Profile) {
-    const reason = u.is_suspended ? null : prompt("Motif de la suspension")?.trim();
+    const reason = u.is_suspended
+      ? null
+      : (await dialog.prompt({ title: "Suspendre ce compte", body: "La connexion est bloquée jusqu'à réactivation.", tone: "danger", confirmLabel: "Suspendre", fields: [{ name: "v", label: "Motif", type: "textarea", required: true }] }))?.v;
     if (!u.is_suspended && !reason) return;
     // Blocage de connexion compris : fonction serveur admin-users (vérifie le rôle admin et trace l'action).
     const { error } = await db.functions.invoke("admin-users", { body: { action: u.is_suspended ? "reactivate" : "suspend", user_id: u.id, reason } });
@@ -40,20 +43,25 @@ export default function AdminUsersPage() {
   }
 
   async function rename(u: Profile) {
-    const first = prompt("Prénom", u.first_name ?? "");
-    if (first === null) return;
-    const last = prompt("Nom", u.last_name ?? "");
-    if (last === null) return;
-    const { error } = await db.rpc("admin_update_profile", { p_user_id: u.id, p_first_name: first, p_last_name: last });
-    setError(error ? errorMessage(error) : null);
-    setVersion((v) => v + 1);
+    const v = await dialog.prompt({
+      title: "Modifier le compte",
+      fields: [
+        { name: "first", label: "Prénom", defaultValue: u.first_name ?? "" },
+        { name: "last", label: "Nom", defaultValue: u.last_name ?? "" },
+      ],
+      action: (v) => orThrow(db.rpc("admin_update_profile", { p_user_id: u.id, p_first_name: v.first, p_last_name: v.last })),
+    });
+    if (v) setVersion((n) => n + 1);
   }
-
   async function remove(u: Profile) {
     const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || "ce compte";
-    if (!confirm(`Supprimer ${name} ? Ses données personnelles sont effacées, l'historique des commandes est conservé sans nom. Action définitive.`)) return;
-    const { error } = await db.functions.invoke("admin-users", { body: { action: "delete", user_id: u.id } });
-    setError(error ? await functionErrorMessage(error) : null);
+    await dialog.confirm({
+      title: `Supprimer ${name} ?`,
+      body: "Ses données personnelles sont effacées ; l'historique des commandes est conservé sans nom. Action définitive.",
+      tone: "danger",
+      confirmLabel: "Supprimer",
+      action: () => orThrow(db.functions.invoke("admin-users", { body: { action: "delete", user_id: u.id } })),
+    });
     setVersion((v) => v + 1);
   }
 
