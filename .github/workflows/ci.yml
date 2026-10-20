@@ -50,7 +50,8 @@ jobs:
     steps:
       - name: Déploiement non configuré
         if: env.CONFIGURED != 'true'
-        run: echo "::warning::Secrets VPS_SSH_KEY, VPS_HOST et VPS_KNOWN_HOSTS absents (docs/mise-en-ligne.md) : site non déployé."
+        run: |
+          echo "::warning::Secrets VPS_SSH_KEY, VPS_HOST et VPS_KNOWN_HOSTS absents (docs/mise-en-ligne.md) : site non déployé."
       - uses: actions/checkout@v4
         if: env.CONFIGURED == 'true'
       - uses: actions/download-artifact@v4
