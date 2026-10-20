@@ -64,7 +64,9 @@ function ProfileForm() {
       <p className="mt-1 text-muted">
         {welcome ? "Complétez votre profil : le livreur pourra vous joindre à la livraison." : "Vos informations de contact."}
       </p>
-      <Card className="mt-8 max-w-xl p-6">
+      {/* Deux colonnes sur grand écran : profil à gauche, sécurité à droite (une seule sur mobile). */}
+      <div className="mt-8 grid items-start gap-6 lg:grid-cols-2">
+        <Card className="p-6">
         {!profile ? (
           <div className="h-64 animate-pulse rounded-field bg-surface-alt" />
         ) : (
@@ -95,8 +97,9 @@ function ProfileForm() {
             </Button>
           </form>
         )}
-      </Card>
-      <SecurityCard email={session.user.email || null} phone={session.user.phone ? `+${session.user.phone}` : null} />
+        </Card>
+        <SecurityCard email={session.user.email || null} phone={session.user.phone ? `+${session.user.phone}` : null} />
+      </div>
     </>
   );
 }
@@ -167,7 +170,7 @@ function SecurityCard({ email, phone }: { email: string | null; phone: string | 
   );
 
   return (
-    <Card className="mt-6 max-w-xl space-y-6 p-6">
+    <Card className="space-y-6 p-6">
       <h2 className="text-lg font-bold">Sécurité</h2>
       <form onSubmit={(e) => change(e, "email")} className="grid gap-3 sm:grid-cols-2">
         <Field label="Nouvelle adresse e-mail">
