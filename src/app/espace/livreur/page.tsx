@@ -1,27 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bike, Smartphone } from "lucide-react";
+import { Smartphone } from "lucide-react";
 import { CourierAffiliations } from "@/components/courier-affiliations";
-import { EmptyState } from "@/components/empty-state";
+import { CourierDeliveries, CourierProfileCard } from "@/components/courier-space";
 import { RequireRole, useAccount } from "@/components/space-shell";
 import { Badge, Card } from "@/components/ui";
-import { formatDateTime, formatMoney } from "@/lib/format";
-import { statusLabel, statusTone, type OrderStatus } from "@/lib/orders";
+import { formatMoney } from "@/lib/format";
 import { browserClient } from "@/lib/supabase";
 
 type Summary = { earnings_today: number; deliveries_today: number; cash_due: number };
-type Mission = {
-  id: string;
-  number: string;
-  type: "food" | "parcel";
-  status: OrderStatus;
-  pickup_district: string;
-  dropoff_district: string;
-  courier_earning: number;
-  assigned_at: string;
-  closed_at: string | null;
-};
 const statusText: Record<string, [string, "success" | "warning" | "danger" | "neutral"]> = {
   pending: ["Dossier en cours de vérification", "warning"],
   approved: ["Dossier approuvé", "success"],
@@ -41,15 +29,10 @@ export default function CourierPage() {
 function Courier() {
   const { roles, session } = useAccount();
   const [summary, setSummary] = useState<Summary | null>(null);
-  const [missions, setMissions] = useState<Mission[] | null>(null);
   useEffect(() => {
     let alive = true;
     const db = browserClient();
-    Promise.all([db.rpc("courier_summary"), db.rpc("courier_missions")]).then(([s, m]) => {
-      if (!alive) return;
-      setSummary(s.data as Summary);
-      setMissions((m.data ?? []) as Mission[]);
-    });
+    db.rpc("courier_summary").then(({ data }) => alive && setSummary(data as Summary));
     return () => {
       alive = false;
     };
@@ -85,28 +68,13 @@ function Courier() {
       <div className="mt-4">
         <CourierAffiliations userId={session.user.id} approved={roles.courier_status === "approved"} />
       </div>
-      <h2 className="mt-10 text-xl font-extrabold">Historique des missions</h2>
+      <h2 className="mt-10 text-xl font-extrabold">Mes livraisons</h2>
       <div className="mt-4">
-        {!missions ? (
-          <div className="h-48 animate-pulse rounded-card bg-surface-alt" />
-        ) : missions.length === 0 ? (
-          <EmptyState icon={Bike} title="Aucune mission pour l'instant" />
-        ) : (
-          <Card className="divide-y divide-border">
-            {missions.map((m) => (
-              <div key={m.id} className="flex flex-wrap items-center gap-3 p-4">
-                <span className="min-w-0 flex-1">
-                  <span className="block font-semibold">
-                    {m.number} · {m.pickup_district} → {m.dropoff_district}
-                  </span>
-                  <span className="text-xs text-muted">{formatDateTime(m.assigned_at)}</span>
-                </span>
-                <Badge tone={statusTone(m.status)}>{statusLabel(m.status, m.type === "parcel")}</Badge>
-                <span className="tabular w-24 text-right font-bold">{formatMoney(m.courier_earning)}</span>
-              </div>
-            ))}
-          </Card>
-        )}
+        <CourierDeliveries />
+      </div>
+      <h2 className="mt-10 text-xl font-extrabold">Mon dossier livreur</h2>
+      <div className="mt-4">
+        <CourierProfileCard userId={session.user.id} />
       </div>
     </>
   );

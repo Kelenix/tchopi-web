@@ -14,6 +14,9 @@ type CourierRow = {
   user_id: string;
   vehicle_type: string;
   plate_number: string | null;
+  id_type: string | null;
+  id_number: string | null;
+  residence: string | null;
   photo_path: string | null;
   status: Status;
   is_online: boolean;
@@ -113,6 +116,12 @@ export default function AdminCouriersPage() {
                       {c.plate_number ? ` · ${c.plate_number}` : ""} · {c.zone?.name}
                     </p>
                     <p className="text-sm">{c.profile?.phone}</p>
+                    {c.id_number && (
+                      <p className="text-sm">
+                        Pièce ({c.id_type}) : <span className="font-mono">{c.id_number}</span>
+                      </p>
+                    )}
+                    {c.residence && <p className="text-sm text-muted">Réside : {c.residence}</p>}
                     <p className="text-xs text-muted">Mis à jour {formatDateTime(c.updated_at)}</p>
                     {c.status === "approved" && <Badge tone={c.is_online ? "success" : "neutral"}>{c.is_online ? "En ligne" : "Hors ligne"}</Badge>}
                     <div className="flex flex-wrap gap-2 pt-2">

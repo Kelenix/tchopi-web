@@ -21,6 +21,11 @@ const messages: Record<string, string> = {
   restaurant_has_orders: "Cet établissement a déjà des commandes : désactivez-le plutôt que de le supprimer.",
   orders_in_progress: "Des commandes sont en cours : terminez-les d'abord.",
   courier_not_approved: "Ce livreur n'est pas encore validé par l'équipe Tchopi.",
+  invalid_plate: "Immatriculation non reconnue : format ivoirien attendu (ex. 1234 AB 01).",
+  invalid_id_number: "Numéro non reconnu pour cette pièce d'identité.",
+  mission_in_progress: "Terminez votre mission en cours d'abord.",
+  cash_due: "Reversez d'abord les espèces encaissées.",
+  courier_suspended: "Compte livreur suspendu : contactez l'équipe Tchopi.",
   period_too_long: "Période trop longue pour ce niveau de détail.",
 };
 

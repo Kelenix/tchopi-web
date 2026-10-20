@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, type FormEvent } from "react";
 import { useAccount } from "@/components/space-shell";
 import { Button, Card, Field, fieldClass } from "@/components/ui";
+import { passwordProblem } from "@/lib/auth";
 import { errorMessage } from "@/lib/errors";
 import { normalizePhone } from "@/lib/phone";
 import { browserClient } from "@/lib/supabase";
@@ -87,6 +88,55 @@ function ProfileForm() {
           </form>
         )}
       </Card>
+      <SecurityCard email={session.user.email ?? null} />
     </>
+  );
+}
+
+/** Email de connexion (confirmé par un lien envoyé à la nouvelle adresse) et mot de passe. */
+function SecurityCard({ email }: { email: string | null }) {
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  async function change(e: FormEvent<HTMLFormElement>, kind: "email" | "password") {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const value = String(new FormData(form).get(kind)).trim();
+    if (kind === "password" && passwordProblem(value)) return setMessage({ ok: false, text: passwordProblem(value)! });
+    const { error } = await browserClient().auth.updateUser(kind === "email" ? { email: value } : { password: value });
+    if (!error) form.reset();
+    setMessage(
+      error
+        ? { ok: false, text: errorMessage(error) }
+        : { ok: true, text: kind === "email" ? "Lien de confirmation envoyé à la nouvelle adresse." : "Mot de passe modifié." },
+    );
+  }
+  return (
+    <Card className="mt-6 max-w-xl space-y-5 p-6">
+      <h2 className="text-lg font-bold">Sécurité</h2>
+      <form onSubmit={(e) => change(e, "email")} className="flex flex-wrap items-end gap-3">
+        <div className="min-w-56 flex-1">
+          <Field label="Adresse e-mail">
+            <input name="email" type="email" required placeholder={email ?? "vous@exemple.ci"} autoComplete="email" className={fieldClass} />
+          </Field>
+        </div>
+        <Button type="submit" variant="soft">
+          Changer
+        </Button>
+      </form>
+      <form onSubmit={(e) => change(e, "password")} className="flex flex-wrap items-end gap-3">
+        <div className="min-w-56 flex-1">
+          <Field label="Nouveau mot de passe" hint="8 caractères au moins, lettres et chiffres.">
+            <input name="password" type="password" required minLength={8} autoComplete="new-password" className={fieldClass} />
+          </Field>
+        </div>
+        <Button type="submit" variant="soft">
+          Changer
+        </Button>
+      </form>
+      {message && (
+        <p role="status" className={`text-sm font-medium ${message.ok ? "text-primary" : "text-danger"}`}>
+          {message.text}
+        </p>
+      )}
+    </Card>
   );
 }
