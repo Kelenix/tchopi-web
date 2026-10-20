@@ -30,7 +30,7 @@ export default function SpacesHome() {
   }
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">Mon espace</h1>
+      <h1 className="font-display text-4xl leading-tight sm:text-5xl">Mon espace</h1>
       <p className="mt-1 text-muted">Choisissez l&apos;espace dans lequel travailler.</p>
       <ul className="mt-8 grid gap-4 sm:grid-cols-2">
         {spaces.map((s) => (

@@ -32,7 +32,7 @@ const ruleFields: [keyof Rule, string][] = [
 export default function AdminSettingsPage() {
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">Zones et paramètres</h1>
+      <h1 className="font-display text-4xl leading-tight sm:text-5xl">Zones et paramètres</h1>
       <div className="mt-8 space-y-8">
         <SettingsCard />
         <Zones />

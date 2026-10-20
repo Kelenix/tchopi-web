@@ -62,7 +62,7 @@ function SignUp() {
   if (id) {
     return (
       <>
-        <h1 className="text-2xl font-extrabold tracking-tight">Vérifiez votre compte</h1>
+        <h1 className="font-display text-4xl leading-tight">Vérifiez votre compte</h1>
         <div className="mt-6">
           <CodeStep
             id={id}
@@ -90,7 +90,7 @@ function SignUp() {
 
   return (
     <>
-      <h1 className="text-2xl font-extrabold tracking-tight">{owner ? "Inscrire mon restaurant" : "Créer un compte"}</h1>
+      <h1 className="font-display text-4xl leading-tight">{owner ? "Inscrire mon restaurant" : "Créer un compte"}</h1>
       <p className="mt-1 text-sm text-muted">
         {owner
           ? "Étape 1 sur 2 : votre compte de gérant. Vous décrirez ensuite votre restaurant."

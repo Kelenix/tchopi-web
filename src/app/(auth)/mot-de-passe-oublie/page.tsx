@@ -49,7 +49,7 @@ export default function ResetPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-extrabold tracking-tight">Mot de passe oublié</h1>
+      <h1 className="font-display text-4xl leading-tight">Mot de passe oublié</h1>
       <div className="mt-6">
         {!id ? (
           <form onSubmit={requestCode} className="space-y-4">

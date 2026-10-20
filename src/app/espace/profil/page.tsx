@@ -52,7 +52,7 @@ function ProfileForm() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">{welcome ? "Bienvenue sur Tchopi !" : "Mon profil"}</h1>
+      <h1 className="font-display text-4xl leading-tight sm:text-5xl">{welcome ? "Bienvenue sur Tchopi !" : "Mon profil"}</h1>
       <p className="mt-1 text-muted">
         {welcome ? "Complétez votre profil : le livreur pourra vous joindre à la livraison." : "Vos informations de contact."}
       </p>

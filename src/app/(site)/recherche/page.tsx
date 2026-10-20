@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Search, SearchX } from "lucide-react";
 import { OpenBadge } from "@/components/catalog-cards";
+import { PageHero } from "@/components/page-hero";
 import { EmptyState } from "@/components/empty-state";
 import { getZones, pickZone, searchCatalog } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/env";
@@ -14,12 +15,14 @@ export const metadata: Metadata = { title: "Recherche" };
 
 export default function SearchPage({ searchParams }: PageProps<"/recherche">) {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-      <h1 className="text-3xl font-extrabold tracking-tight">Rechercher</h1>
+    <>
+      <PageHero image="/hero/brochettes-boeuf.jpg" embers title={<>Une envie ? <span className="italic text-[#ffb35c]">Cherchez.</span></>} subtitle="Un plat, une cuisine ou un restaurant de votre ville." />
+      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-card bg-surface-alt" />}>
         <Results searchParams={searchParams} />
       </Suspense>
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -34,15 +37,15 @@ async function Results({ searchParams }: { searchParams: Promise<{ ville?: strin
 
   return (
     <>
-      <form action="/recherche" className="mt-6 grid gap-2 sm:grid-cols-[12rem_1fr_auto]">
-        <select name="ville" defaultValue={zone?.id} aria-label="Ville" className={fieldClass}>
+      <form action="/recherche" className="glass-nav -mt-20 relative z-10 grid gap-2 rounded-[28px] p-2 sm:grid-cols-[12rem_1fr_auto] sm:rounded-full">
+        <select name="ville" defaultValue={zone?.id} aria-label="Ville" className={`${fieldClass} rounded-full border-transparent bg-surface/80`}>
           {zones.map((z) => (
             <option key={z.id} value={z.id}>
               {z.city}
             </option>
           ))}
         </select>
-        <input name="q" defaultValue={q} minLength={2} required placeholder="Un plat ou un restaurant" aria-label="Recherche" className={fieldClass} />
+        <input name="q" defaultValue={q} minLength={2} required placeholder="Un plat ou un restaurant" aria-label="Recherche" className={`${fieldClass} rounded-full border-transparent bg-surface/80`} />
         <button type="submit" className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary">
           <Search className="size-4" aria-hidden /> Chercher
         </button>

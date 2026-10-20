@@ -74,7 +74,7 @@ export default function AdminCouriersPage() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">Livreurs</h1>
+      <h1 className="font-display text-4xl leading-tight sm:text-5xl">Livreurs</h1>
       <div role="tablist" className="mt-6 flex gap-1 overflow-x-auto rounded-full bg-surface-alt p-1">
         {tabs.map(([key, label]) => (
           <button key={key} role="tab" aria-selected={tab === key} onClick={() => setTab(key)} className={`h-10 shrink-0 rounded-full px-4 text-sm font-semibold ${tab === key ? "bg-surface shadow-float" : "text-muted"}`}>

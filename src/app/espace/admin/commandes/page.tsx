@@ -78,7 +78,7 @@ export default function AdminOrdersPage() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">Commandes</h1>
+      <h1 className="font-display text-4xl leading-tight sm:text-5xl">Commandes</h1>
       <p className="mt-1 text-sm text-muted">
         Seules les commandes qui demandent une intervention sont listées (sans livreur, établissement sans réponse, code bloqué, problème).
         Toute autre commande se retrouve par son numéro.

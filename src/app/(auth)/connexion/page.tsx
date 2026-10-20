@@ -41,7 +41,7 @@ function SignIn() {
 
   return (
     <>
-      <h1 className="text-2xl font-extrabold tracking-tight">Se connecter</h1>
+      <h1 className="font-display text-4xl leading-tight">Se connecter</h1>
       <p className="mt-1 text-sm text-muted">Le même compte que sur l&apos;application mobile.</p>
       <div className="mt-6">
         <GoogleButton next={next} />

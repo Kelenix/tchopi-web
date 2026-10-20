@@ -33,7 +33,7 @@ function OAuthReturn() {
 
   return (
     <div className="space-y-4 text-center">
-      <h1 className="text-2xl font-extrabold tracking-tight">Connexion</h1>
+      <h1 className="font-display text-4xl leading-tight">Connexion</h1>
       {failed || error ? (
         <>
           <p className="text-sm text-danger">{failed ?? error}</p>

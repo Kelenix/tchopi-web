@@ -58,7 +58,7 @@ function Courier() {
   return (
     <>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-3xl font-extrabold tracking-tight">Mon activité</h1>
+        <h1 className="font-display text-4xl leading-tight sm:text-5xl">Mon activité</h1>
         <Badge tone={tone}>{label}</Badge>
       </div>
       <Card className="mt-6 flex items-start gap-4 p-5">

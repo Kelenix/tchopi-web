@@ -34,7 +34,7 @@ export default function MyOrdersPage() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">Mes commandes</h1>
+      <h1 className="font-display text-4xl leading-tight sm:text-5xl">Mes commandes</h1>
       {!orders ? (
         <div className="mt-8 h-48 animate-pulse rounded-card bg-surface-alt" />
       ) : orders.length === 0 ? (

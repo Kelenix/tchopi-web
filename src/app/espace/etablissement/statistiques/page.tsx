@@ -66,7 +66,7 @@ export default function StatsPage() {
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="text-3xl font-extrabold tracking-tight">Statistiques</h1>
+        <h1 className="font-display text-4xl leading-tight sm:text-5xl">Statistiques</h1>
         <div role="tablist" aria-label="Période" className="flex gap-1 rounded-full bg-surface-alt p-1">
           {periods.map((p) => (
             <button key={p} role="tab" aria-selected={days === p} onClick={() => setDays(p)} className={`h-9 rounded-full px-4 text-sm font-semibold ${days === p ? "bg-surface shadow-float" : "text-muted"}`}>

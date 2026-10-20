@@ -69,7 +69,7 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">Administration</h1>
+      <h1 className="font-display text-4xl leading-tight sm:text-5xl">Administration</h1>
       <ul className="mt-6 grid gap-3 md:grid-cols-3">
         {[
           { href: "/espace/admin/commandes", icon: AlertTriangle, n: todo?.alerts, label: "commande(s) à traiter" },

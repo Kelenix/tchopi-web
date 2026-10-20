@@ -127,7 +127,7 @@ export default function NewRestaurantPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-3xl font-extrabold tracking-tight">Inscrire mon restaurant</h1>
+      <h1 className="font-display text-4xl leading-tight sm:text-5xl">Inscrire mon restaurant</h1>
       <p className="mt-1 text-muted">Quatre étapes, environ 3 minutes. L&apos;inscription est gratuite.</p>
       {roles.restaurant_ids.length > 0 && (
         <p className="mt-4 rounded-field bg-surface-alt px-4 py-3 text-sm">

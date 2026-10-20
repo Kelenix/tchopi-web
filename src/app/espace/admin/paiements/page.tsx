@@ -58,7 +58,7 @@ export default function AdminPaymentsPage() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">Paiements</h1>
+      <h1 className="font-display text-4xl leading-tight sm:text-5xl">Paiements</h1>
       <Card className="mt-6 p-5">
         <h2 className="font-bold">Moyens de paiement proposés</h2>
         <p className="text-sm text-muted">N&apos;activez un paiement en ligne qu&apos;après les essais réels avec les clés du fournisseur (docs/mise-en-service.md).</p>

@@ -167,7 +167,7 @@ export function SpaceShell({ children }: { children: ReactNode }) {
           </div>
         )}
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur sm:px-6">
+          <header className="glass-nav sticky top-3 z-30 mx-3 mt-3 flex h-14 items-center gap-3 rounded-full px-4 sm:mx-6">
             <button type="button" className="lg:hidden" aria-label="Ouvrir le menu" onClick={() => setOpen(true)}>
               <MenuIcon className="size-6" aria-hidden />
             </button>

@@ -142,7 +142,7 @@ export default function CheckoutPage() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">Votre commande</h1>
+      <h1 className="font-display text-4xl leading-tight sm:text-5xl">Votre commande</h1>
       <p className="mt-1 text-muted">
         Chez{" "}
         <Link href={`/etablissements/${current.establishmentId}`} className="font-semibold text-ink underline-offset-2 hover:underline">

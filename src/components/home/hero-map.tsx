@@ -91,7 +91,8 @@ export function HeroMap() {
       const dist = cumulative(line);
       const primary = dark ? "#3dd68c" : "#0b5d3b";
 
-      map.on("load", () => {
+      // Dès que le style est lu (sans attendre toutes les tuiles) : trajet et marqueurs visibles tout de suite.
+      map.once("style.load", () => {
         if (!map) return;
         map.addSource("route", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: line } } });
         map.addSource("done", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [line[0]] } } });

@@ -97,7 +97,7 @@ export default function TrackingPage({ params }: PageProps<"/espace/commandes/[i
         <ArrowLeft className="size-4" aria-hidden /> Mes commandes
       </Link>
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <h1 className="text-3xl font-extrabold tracking-tight">{o.type === "parcel" ? "Colis" : o.pickup_name}</h1>
+        <h1 className="font-display text-4xl leading-tight sm:text-5xl">{o.type === "parcel" ? "Colis" : o.pickup_name}</h1>
         <StatusBadge order={o} />
       </div>
       <p className="mt-1 text-sm text-muted">

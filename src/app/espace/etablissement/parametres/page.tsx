@@ -17,7 +17,7 @@ type Range = { opens_at: string; closes_at: string };
 export default function SettingsPage() {
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">Profil et horaires</h1>
+      <h1 className="font-display text-4xl leading-tight sm:text-5xl">Profil et horaires</h1>
       <p className="mt-1 text-sm text-muted">
         Nom, adresse, commission et activation sont gérés par l&apos;équipe Tchopi. Le reste est modifiable ici.
       </p>

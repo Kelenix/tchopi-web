@@ -40,7 +40,7 @@ export default function EstablishmentDashboard() {
     <>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Tableau de bord</h1>
+          <h1 className="font-display text-4xl leading-tight sm:text-5xl">Tableau de bord</h1>
           <p className="mt-1 text-muted">{e?.name}</p>
         </div>
         <ButtonLink href="/espace/etablissement/produits?nouveau=1">

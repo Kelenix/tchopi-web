@@ -29,9 +29,9 @@ export function Menu({ establishment }: { establishment: EstablishmentDetail }) 
   return (
     <>
       {sections.length > 1 && (
-        <nav aria-label="Catégories du menu" className="sticky top-16 z-30 -mx-4 mb-6 flex gap-2 overflow-x-auto border-b border-border bg-background/90 px-4 py-3 backdrop-blur sm:mx-0 sm:px-0">
+        <nav aria-label="Catégories du menu" className="glass-nav sticky top-[5rem] z-30 mb-8 flex w-fit max-w-full gap-1 overflow-x-auto rounded-full p-1.5">
           {sections.map((s) => (
-            <a key={s.id} href={`#cat-${s.id}`} className="shrink-0 rounded-full bg-surface px-4 py-2 text-sm font-semibold text-muted ring-1 ring-border hover:text-ink">
+            <a key={s.id} href={`#cat-${s.id}`} className="shrink-0 rounded-full px-4 py-2 text-sm font-semibold text-muted transition hover:bg-surface hover:text-ink">
               {s.name}
             </a>
           ))}
@@ -40,7 +40,7 @@ export function Menu({ establishment }: { establishment: EstablishmentDetail }) 
       <div className="space-y-10">
         {sections.map((s) => (
           <section key={s.id} id={`cat-${s.id}`} className="scroll-mt-32">
-            <h2 className="mb-4 text-xl font-extrabold">{s.name}</h2>
+            <h2 className="mb-5 font-display text-4xl">{s.name}</h2>
             <ul className="grid gap-4 md:grid-cols-2">
               {s.products.map((p) => (
                 <li key={p.id} id={`produit-${p.id}`} className="scroll-mt-32">
@@ -97,7 +97,7 @@ export function Menu({ establishment }: { establishment: EstablishmentDetail }) 
 function ProductRow({ product: p, disabled, onAdd }: { product: Product; disabled: boolean; onAdd: () => void }) {
   const url = mediaUrl(p.photo_path);
   return (
-    <div className="flex h-full gap-4 rounded-card border border-border bg-surface p-4">
+    <div className="flex h-full gap-4 rounded-[24px] border border-border bg-surface p-4 transition duration-300 hover:-translate-y-0.5 hover:shadow-float">
       <div className="flex min-w-0 flex-1 flex-col">
         <h3 className="font-bold">{p.name}</h3>
         {p.description && <p className="mt-1 line-clamp-2 text-sm text-muted">{p.description}</p>}

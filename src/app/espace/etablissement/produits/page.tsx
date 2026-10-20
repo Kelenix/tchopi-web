@@ -89,7 +89,7 @@ function Products() {
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Produits</h1>
+          <h1 className="font-display text-4xl leading-tight sm:text-5xl">Produits</h1>
           <p className="mt-1 text-sm text-muted">
             {products ? `${products.length} produit${products.length > 1 ? "s" : ""} · ${products.filter((p) => !p.is_available).length} indisponible(s)` : " "}
           </p>

@@ -84,7 +84,7 @@ function Establishments() {
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="text-3xl font-extrabold tracking-tight">Restaurants</h1>
+        <h1 className="font-display text-4xl leading-tight sm:text-5xl">Restaurants</h1>
         <Button onClick={() => setEditing("new")}>
           <Plus className="size-4" aria-hidden /> Nouveau restaurant
         </Button>

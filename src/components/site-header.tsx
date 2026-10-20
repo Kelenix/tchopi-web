@@ -14,14 +14,14 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 px-3 pt-3">
       {/* Pilule en verre dépoli, posée au-dessus du contenu (sur l'accueil, au-dessus de la photo). */}
-      <div className="glass-light mx-auto flex h-14 max-w-6xl items-center gap-4 rounded-full pl-4 pr-2">
+      <div className="glass-nav mx-auto flex h-14 max-w-6xl items-center gap-4 rounded-full pl-4 pr-2">
         <Logo />
         <nav aria-label="Navigation principale" className="hidden flex-1 items-center justify-center gap-1 md:flex">
           {links.map((l) => (
             <Link
               key={l.href}
               href={l.href}
-              className="rounded-full px-3 py-2 text-sm font-semibold text-muted transition hover:bg-surface-alt hover:text-ink"
+              className="rounded-full px-3.5 py-2 text-sm font-semibold text-ink/80 transition hover:bg-ink/5 hover:text-ink"
             >
               {l.label}
             </Link>
