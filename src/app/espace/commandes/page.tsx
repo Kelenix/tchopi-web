@@ -39,7 +39,7 @@ export default function MyOrdersPage() {
         <div className="mt-8 h-48 animate-pulse rounded-card bg-surface-alt" />
       ) : orders.length === 0 ? (
         <div className="mt-8">
-          <EmptyState icon={ShoppingBag} title="Aucune commande pour l'instant" action={<ButtonLink href="/#etablissements">Commander</ButtonLink>} />
+          <EmptyState icon={ShoppingBag} title="Aucune commande pour l'instant" action={<ButtonLink href="/#restaurants">Commander</ButtonLink>} />
         </div>
       ) : (
         <>

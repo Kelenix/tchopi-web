@@ -123,4 +123,3 @@ export function pickZone(zones: Zone[], requested: string | undefined): Zone | u
   );
 }
 
-export const kindLabel: Record<EstablishmentKind, string> = { restaurant: "Restaurant", shop: "Magasin" };

@@ -52,7 +52,7 @@ export default function AdminDashboard() {
     Promise.all([
       db.from("orders").select("*").in("status", supervisedStatuses).limit(200),
       db.from("settings").select().single(),
-      db.from("partner_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      db.from("restaurants").select("id", { count: "exact", head: true }).eq("review_status", "pending"),
       db.from("couriers").select("user_id", { count: "exact", head: true }).eq("status", "pending"),
     ]).then(([o, s, p, c]) => {
       if (!alive) return;
@@ -73,7 +73,7 @@ export default function AdminDashboard() {
       <ul className="mt-6 grid gap-3 md:grid-cols-3">
         {[
           { href: "/espace/admin/commandes", icon: AlertTriangle, n: todo?.alerts, label: "commande(s) à traiter" },
-          { href: "/espace/admin/etablissements?onglet=candidatures", icon: Store, n: todo?.partners, label: "candidature(s) d'établissement" },
+          { href: "/espace/admin/etablissements?onglet=a-valider", icon: Store, n: todo?.partners, label: "restaurant(s) à valider" },
           { href: "/espace/admin/livreurs", icon: Bike, n: todo?.couriers, label: "livreur(s) à valider" },
         ].map((t) => (
           <li key={t.href}>
@@ -132,17 +132,9 @@ export default function AdminDashboard() {
             </ul>
           </Card>
           <Card className="p-5">
-            <h3 className="font-bold">Par service</h3>
+            <h3 className="font-bold">Remboursements</h3>
             <ul className="mt-3 space-y-1.5 text-sm">
               <li className="flex justify-between">
-                <span>Repas et courses</span>
-                <span className="tabular font-semibold">{s.by_type.food ?? 0}</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Colis</span>
-                <span className="tabular font-semibold">{s.by_type.parcel ?? 0}</span>
-              </li>
-              <li className="flex justify-between border-t border-border pt-2">
                 <span>Remboursements en attente</span>
                 <span className="tabular font-semibold">{s.refunds_pending}</span>
               </li>

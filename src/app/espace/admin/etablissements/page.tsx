@@ -28,6 +28,8 @@ type Establishment = {
   commission_rate: number;
   is_active: boolean;
   is_open: boolean;
+  review_status: "pending" | "approved" | "rejected";
+  created_at: string;
 };
 type Application = {
   id: string;
@@ -52,7 +54,7 @@ export default function AdminEstablishmentsPage() {
 
 function Establishments() {
   const db = browserClient();
-  const [tab, setTab] = useState<"list" | "applications">(useSearchParams().get("onglet") === "candidatures" ? "applications" : "list");
+  const [tab, setTab] = useState<"list" | "pending" | "applications">(useSearchParams().get("onglet") === "a-valider" ? "pending" : "list");
   const [items, setItems] = useState<Establishment[] | null>(null);
   const [zones, setZones] = useState<Zone[]>([]);
   const [apps, setApps] = useState<Application[] | null>(null);
@@ -77,20 +79,22 @@ function Establishments() {
   }, [db, version]);
 
   const pending = apps?.filter((a) => a.status === "pending").length ?? 0;
+  const toReview = items?.filter((e) => e.review_status === "pending") ?? [];
 
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="text-3xl font-extrabold tracking-tight">Établissements</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight">Restaurants</h1>
         <Button onClick={() => setEditing("new")}>
-          <Plus className="size-4" aria-hidden /> Nouvel établissement
+          <Plus className="size-4" aria-hidden /> Nouveau restaurant
         </Button>
       </div>
       <div role="tablist" className="mt-6 flex w-fit gap-1 rounded-full bg-surface-alt p-1">
         {(
           [
-            ["list", `Établissements${items ? ` (${items.length})` : ""}`],
-            ["applications", `Candidatures${pending ? ` (${pending})` : ""}`],
+            ["list", `Restaurants${items ? ` (${items.length})` : ""}`],
+            ["pending", `À valider${toReview.length ? ` (${toReview.length})` : ""}`],
+            ["applications", `Anciennes candidatures${pending ? ` (${pending})` : ""}`],
           ] as const
         ).map(([key, label]) => (
           <button key={key} role="tab" aria-selected={tab === key} onClick={() => setTab(key)} className={`h-10 rounded-full px-4 text-sm font-semibold ${tab === key ? "bg-surface shadow-float" : "text-muted"}`}>
@@ -100,7 +104,9 @@ function Establishments() {
       </div>
 
       <div className="mt-6">
-        {tab === "list" ? (
+        {tab === "pending" ? (
+          <PendingRestaurants items={toReview} zones={zones} onChange={() => setVersion((v) => v + 1)} />
+        ) : tab === "list" ? (
           !items ? (
             <div className="h-48 animate-pulse rounded-card bg-surface-alt" />
           ) : items.length === 0 ? (
@@ -116,8 +122,9 @@ function Establishments() {
                         {zones.find((z) => z.id === e.zone_id)?.city} · {e.district} · commission {e.commission_rate} %
                       </span>
                     </span>
-                    <Badge>{e.kind === "shop" ? "Magasin" : "Restaurant"}</Badge>
-                    {!e.is_active ? <Badge tone="danger">Désactivé</Badge> : <Badge tone={e.is_open ? "success" : "neutral"}>{e.is_open ? "Ouvert" : "Fermé"}</Badge>}
+                    {e.review_status === "pending" ? (
+                      <Badge tone="warning">À valider</Badge>
+                    ) : !e.is_active ? <Badge tone="danger">Désactivé</Badge> : <Badge tone={e.is_open ? "success" : "neutral"}>{e.is_open ? "Ouvert" : "Fermé"}</Badge>}
                   </button>
                 </li>
               ))}
@@ -143,6 +150,58 @@ function Establishments() {
   );
 }
 
+/** Restaurants inscrits par leur gérant (ADR-044) : validation avec la commission, ou refus motivé. */
+function PendingRestaurants({ items, zones, onChange }: { items: Establishment[]; zones: Zone[]; onChange: () => void }) {
+  const [error, setError] = useState<string | null>(null);
+  if (!items.length) return <EmptyState icon={Store} title="Aucun restaurant à valider" body="Les inscriptions faites sur le site arrivent ici." />;
+  async function review(e: Establishment, approved: boolean) {
+    const commission = approved ? Number(prompt(`Commission pour ${e.name} (%)`, "15")) : null;
+    if (approved && (!Number.isFinite(commission) || commission! < 0 || commission! > 100)) return;
+    const reason = approved ? null : prompt("Motif du refus (communiqué au gérant)")?.trim();
+    if (!approved && !reason) return;
+    const { error } = await browserClient().rpc("admin_review_restaurant", {
+      p_id: e.id,
+      p_approved: approved,
+      p_commission_rate: commission,
+      p_reason: reason,
+    });
+    setError(error ? errorMessage(error) : null);
+    onChange();
+  }
+  return (
+    <>
+      {error && <p className="mb-4 text-sm text-danger">{error}</p>}
+      <ul className="grid gap-4 lg:grid-cols-2">
+        {items.map((e) => (
+          <li key={e.id}>
+            <Card className="space-y-2 p-5">
+              <p className="font-bold">{e.name}</p>
+              <p className="text-sm text-muted">
+                {e.category ?? "Cuisine non précisée"} · {zones.find((z) => z.id === e.zone_id)?.city} · {e.district}
+              </p>
+              <p className="text-sm">
+                <a href={`tel:${e.phone}`} className="text-primary">
+                  {e.phone}
+                </a>{" "}
+                · inscrit le {formatDateTime(e.created_at)}
+              </p>
+              {e.description && <p className="text-sm text-muted">{e.description}</p>}
+              <div className="flex gap-2 pt-2">
+                <Button className="h-9 px-3 text-xs" onClick={() => review(e, true)}>
+                  <Check className="size-4" aria-hidden /> Valider
+                </Button>
+                <Button variant="outline" className="h-9 px-3 text-xs" onClick={() => review(e, false)}>
+                  Refuser
+                </Button>
+              </div>
+            </Card>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
 function Applications({ apps, onChange }: { apps: Application[] | null; onChange: () => void }) {
   const [error, setError] = useState<string | null>(null);
   if (!apps) return <div className="h-48 animate-pulse rounded-card bg-surface-alt" />;
@@ -163,7 +222,7 @@ function Applications({ apps, onChange }: { apps: Application[] | null; onChange
                 <div>
                   <p className="font-bold">{a.business_name}</p>
                   <p className="text-xs text-muted">
-                    {a.kind === "shop" ? "Magasin" : "Restaurant"} · {a.city} · {formatDateTime(a.created_at)}
+                    {a.city} · {formatDateTime(a.created_at)}
                   </p>
                 </div>
                 <Badge tone={a.status === "pending" ? "warning" : a.status === "approved" ? "success" : "danger"}>
@@ -234,7 +293,6 @@ function EstablishmentEditor({
       p_landmark: form.get("landmark"),
       p_commission_rate: Number(form.get("commission")),
       p_is_active: form.get("active") === "on",
-      p_kind: form.get("kind"),
     });
     setBusy(false);
     if (error) return setError(errorMessage(error));
@@ -254,12 +312,6 @@ function EstablishmentEditor({
         <form onSubmit={save} className="grid gap-4 p-5 sm:grid-cols-2">
           <Field label="Nom">
             <input name="name" required minLength={2} maxLength={80} defaultValue={e?.name} className={fieldClass} />
-          </Field>
-          <Field label="Type">
-            <select name="kind" defaultValue={e?.kind ?? "restaurant"} className={fieldClass}>
-              <option value="restaurant">Restaurant</option>
-              <option value="shop">Magasin</option>
-            </select>
           </Field>
           <Field label="Catégorie">
             <input name="category" maxLength={40} defaultValue={e?.category ?? ""} className={fieldClass} />

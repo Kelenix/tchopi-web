@@ -42,7 +42,7 @@ async function Results({ searchParams }: { searchParams: Promise<{ ville?: strin
             </option>
           ))}
         </select>
-        <input name="q" defaultValue={q} minLength={2} required placeholder="Un plat, un produit, un établissement" aria-label="Recherche" className={fieldClass} />
+        <input name="q" defaultValue={q} minLength={2} required placeholder="Un plat ou un restaurant" aria-label="Recherche" className={fieldClass} />
         <button type="submit" className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-on-primary">
           <Search className="size-4" aria-hidden /> Chercher
         </button>
@@ -56,7 +56,7 @@ async function Results({ searchParams }: { searchParams: Promise<{ ville?: strin
 
       {establishments.length > 0 && (
         <section className="mt-10">
-          <h2 className="text-lg font-bold">Établissements</h2>
+          <h2 className="text-lg font-bold">Restaurants</h2>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2">
             {establishments.map((r) => (
               <li key={r.id}>
@@ -72,7 +72,7 @@ async function Results({ searchParams }: { searchParams: Promise<{ ville?: strin
 
       {products.length > 0 && (
         <section className="mt-10">
-          <h2 className="text-lg font-bold">Produits</h2>
+          <h2 className="text-lg font-bold">Plats</h2>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2">
             {products.map((r) => {
               const url = mediaUrl(r.photo_path);

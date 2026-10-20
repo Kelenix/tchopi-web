@@ -45,6 +45,17 @@ function Banner() {
           </button>
         )}
       </div>
+      {establishment?.review_status === "pending" && (
+        <p className="rounded-card border border-warning bg-warning-soft px-5 py-4 text-sm font-medium text-warning">
+          Restaurant en cours de validation par l&apos;équipe Tchopi. Préparez votre carte et vos horaires : tout sera
+          visible des clients dès la validation.
+        </p>
+      )}
+      {establishment?.review_status === "rejected" && (
+        <p className="rounded-card border border-danger bg-danger-soft px-5 py-4 text-sm font-medium text-danger">
+          Inscription refusée : l&apos;équipe Tchopi vous contacte pour en savoir plus.
+        </p>
+      )}
       {unseen.length > 0 && (
         <Link
           href="/espace/etablissement/commandes"

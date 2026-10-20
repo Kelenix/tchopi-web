@@ -19,7 +19,8 @@ let browser: SupabaseClient | undefined;
  */
 export function browserClient(): SupabaseClient {
   browser ??= createClient(env.supabaseUrl, env.supabaseAnonKey, {
-    auth: { persistSession: true, autoRefreshToken: true, storageKey: "tchopi-auth" },
+    // PKCE : le retour de Google porte un code échangé par le navigateur (jamais de jeton dans l'adresse).
+    auth: { persistSession: true, autoRefreshToken: true, storageKey: "tchopi-auth", flowType: "pkce", detectSessionInUrl: true },
   });
   return browser;
 }

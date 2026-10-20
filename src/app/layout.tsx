@@ -7,9 +7,9 @@ const jakarta = Plus_Jakarta_Sans({ variable: "--font-jakarta", subsets: ["latin
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.siteUrl),
-  title: { default: "Tchopi — repas et courses livrés dans votre ville", template: "%s · Tchopi" },
+  title: { default: "Tchopi : vos restaurants préférés, livrés chez vous", template: "%s · Tchopi" },
   description:
-    "Commandez auprès des restaurants et magasins de votre ville, payez en espèces, Mobile Money ou carte, et suivez votre livreur en direct.",
+    "Commandez dans les restaurants et maquis de votre ville en Côte d'Ivoire, payez en espèces, Mobile Money ou carte, et suivez votre livreur en direct.",
   openGraph: { siteName: "Tchopi", locale: "fr_CI", type: "website" },
 };
 

@@ -21,6 +21,7 @@ export type ManagedEstablishment = {
   is_active: boolean;
   is_temporarily_closed: boolean;
   is_open: boolean;
+  review_status: "pending" | "approved" | "rejected";
 };
 
 type Value = {

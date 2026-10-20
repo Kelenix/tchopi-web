@@ -82,9 +82,8 @@ function SettingsCard() {
         <Field label="Alerte sans livreur (min)">
           <input name="alert" type="number" min={2} max={60} required defaultValue={settings.dispatch_alert_s / 60} className={fieldClass} />
         </Field>
-        <Field label="Annulation d'un colis sans livreur (min)">
-          <input name="cancel" type="number" min={5} max={240} required defaultValue={settings.dispatch_cancel_s / 60} className={fieldClass} />
-        </Field>
+        {/* Annulation automatique des colis sans livreur : service colis en pause (ADR-043), valeur conservée. */}
+        <input type="hidden" name="cancel" value={settings.dispatch_cancel_s / 60} />
         <Field label="Téléphone du support">
           <input name="support" type="tel" defaultValue={settings.support_phone ?? ""} className={fieldClass} />
         </Field>
@@ -180,7 +179,7 @@ function ZoneEditor({ zone, rules, onClose, onSaved }: { zone: Zone | null; rule
       return setError(errorMessage(saved.error));
     }
     const { error } = await db.from("pricing_rules").upsert(
-      (["food", "parcel"] as const).map((service) => ({
+      (["food"] as const).map((service) => ({
         zone_id: saved.data.id,
         service,
         ...Object.fromEntries(ruleFields.map(([k]) => [k, Number(form.get(`${service}-${k}`))])),
@@ -216,9 +215,9 @@ function ZoneEditor({ zone, rules, onClose, onSaved }: { zone: Zone | null; rule
           <p className="mb-1.5 text-sm font-semibold">Centre de la zone</p>
           <MapPicker initial={center} onChange={setCenter} />
         </div>
-        {(["food", "parcel"] as const).map((service) => (
+        {(["food"] as const).map((service) => (
           <fieldset key={service} className="rounded-field border border-border p-4">
-            <legend className="px-1 text-sm font-bold">{service === "food" ? "Tarifs repas et courses (F)" : "Tarifs colis (F)"}</legend>
+            <legend className="px-1 text-sm font-bold">Tarifs de livraison (F)</legend>
             <div className="grid gap-3 sm:grid-cols-3">
               {ruleFields.map(([k, label]) => (
                 <Field key={k} label={label}>

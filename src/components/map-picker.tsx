@@ -2,6 +2,7 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
+import { loadMapLibre } from "@/lib/maplibre";
 import type { Map as MapLibre } from "maplibre-gl";
 import { LocateFixed, MapPin, Search } from "lucide-react";
 import { fieldClass } from "./ui";
@@ -46,7 +47,7 @@ export function MapPicker({ initial, onChange }: { initial: Point; onChange: (p:
 
   useEffect(() => {
     let disposed = false;
-    import("maplibre-gl").then(({ Map, NavigationControl }) => {
+    loadMapLibre().then(({ Map, NavigationControl }) => {
       if (disposed || !container.current) return;
       const dark = document.documentElement.getAttribute("data-theme") === "dark";
       const m = new Map({
@@ -57,6 +58,8 @@ export function MapPicker({ initial, onChange }: { initial: Point; onChange: (p:
         attributionControl: { compact: true, customAttribution: "© OpenFreeMap © OpenMapTiles © OpenStreetMap" },
       });
       m.addControl(new NavigationControl({ showCompass: false }), "bottom-right");
+      // Le point de départ compte aussi si l'utilisateur ne déplace pas la carte.
+      m.on("load", () => changed.current({ lat: initial.lat, lng: initial.lng }));
       m.on("moveend", () => {
         const c = m.getCenter();
         changed.current({ lat: c.lat, lng: c.lng });

@@ -2,6 +2,7 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef } from "react";
+import { loadMapLibre } from "@/lib/maplibre";
 import type { Map as MapLibre, Marker } from "maplibre-gl";
 import type { Point } from "./map-picker";
 
@@ -36,7 +37,7 @@ export function CourierMap({ courier, dropoff }: { courier: Point | null; dropof
 
   useEffect(() => {
     let disposed = false;
-    import("maplibre-gl").then((m) => {
+    loadMapLibre().then((m) => {
       if (disposed || !container.current) return;
       lib.current = m;
       const dark = document.documentElement.getAttribute("data-theme") === "dark";

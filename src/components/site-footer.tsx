@@ -5,17 +5,17 @@ const columns = [
   {
     title: "Commander",
     links: [
-      { href: "/#etablissements", label: "Restaurants et magasins" },
-      { href: "/recherche", label: "Rechercher un plat ou un produit" },
+      { href: "/#restaurants", label: "Restaurants" },
+      { href: "/recherche", label: "Rechercher un plat" },
       { href: "/#fonctionnement", label: "Comment ça marche" },
       { href: "/connexion", label: "Se connecter" },
     ],
   },
   {
-    title: "Partenaires",
+    title: "Restaurateurs",
     links: [
-      { href: "/#partenaires", label: "Devenir partenaire" },
-      { href: "/espace/etablissement", label: "Espace établissement" },
+      { href: "/inscription?profil=restaurant", label: "Inscrire mon restaurant" },
+      { href: "/espace/etablissement", label: "Espace restaurant" },
       { href: "/espace/livreur", label: "Espace livreur" },
     ],
   },
@@ -36,8 +36,8 @@ export function SiteFooter() {
         <div className="space-y-4">
           <Logo />
           <p className="max-w-xs text-sm text-muted">
-            Repas, courses et colis livrés dans votre ville, en Côte d&apos;Ivoire. Paiement en espèces, Mobile Money
-            ou carte.
+            Les restaurants de votre ville, livrés chez vous en Côte d&apos;Ivoire. Paiement en espèces, Mobile
+            Money ou carte.
           </p>
         </div>
         {columns.map((c) => (

@@ -3,7 +3,7 @@ const messages: Record<string, string> = {
   forbidden: "Action non autorisée pour ce compte.",
   not_found: "Élément introuvable ou supprimé.",
   invalid_transition: "Cette action n'est plus possible à ce stade.",
-  already_submitted: "Une demande est déjà en cours d'examen pour ce numéro.",
+  already_submitted: "Une demande est déjà en cours d'examen.",
   too_many_requests: "Trop de demandes en ce moment : réessayez dans une heure.",
   cart_empty: "Votre panier est vide.",
   cart_changed: "Votre panier a changé : vérifiez-le avant de commander.",

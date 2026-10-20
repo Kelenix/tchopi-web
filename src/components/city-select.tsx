@@ -15,7 +15,7 @@ export function CitySelect({ zones, current }: { zones: Zone[]; current: string 
         value={current}
         onChange={(e) => {
           document.cookie = `ville=${e.target.value}; path=/; max-age=31536000; SameSite=Lax`;
-          router.push(`/?ville=${e.target.value}#etablissements`, { scroll: false });
+          router.push(`/?ville=${e.target.value}#restaurants`, { scroll: false });
         }}
         className="h-full w-full cursor-pointer appearance-none bg-transparent pr-6 text-sm font-semibold focus:outline-none"
       >

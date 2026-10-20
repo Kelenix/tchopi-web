@@ -4,11 +4,11 @@ import { ChevronDown } from "lucide-react";
 const questions = [
   {
     q: "Comment se passe une commande ?",
-    a: "Choisissez votre ville, un établissement ouvert et vos produits. L'établissement accepte votre commande (il a 10 minutes pour répondre), la prépare, puis un livreur la récupère et vous l'apporte. Vous suivez chaque étape en direct.",
+    a: "Choisissez votre ville, un restaurant ouvert et vos plats. Le restaurant accepte votre commande (il a 10 minutes pour répondre), la prépare, puis un livreur la récupère et vous l'apporte. Vous suivez chaque étape en direct.",
   },
   {
     q: "Que se passe-t-il si aucun livreur n'est disponible ?",
-    a: "Votre commande est quand même transmise à l'établissement, qui la prépare. Elle est proposée aux livreurs dès qu'elle est prête et reste proposée jusqu'à ce que l'un d'eux l'accepte ; vous êtes prévenu à chaque étape.",
+    a: "Votre commande est quand même transmise au restaurant, qui la prépare. Elle est proposée aux livreurs dès qu'elle est prête et reste proposée jusqu'à ce que l'un d'eux l'accepte ; vous êtes prévenu à chaque étape.",
   },
   {
     q: "Comment puis-je payer ?",
@@ -16,7 +16,7 @@ const questions = [
   },
   {
     q: "Combien coûte la livraison ?",
-    a: "Les frais dépendent de la distance entre l'établissement et votre adresse, selon les tarifs de votre ville. Ils sont calculés par le serveur et affichés avant la validation de la commande.",
+    a: "Les frais dépendent de la distance entre le restaurant et votre adresse, selon les tarifs de votre ville. Ils sont calculés par le serveur et affichés avant la validation de la commande.",
   },
   {
     q: "À quoi sert le code de livraison ?",
@@ -24,11 +24,11 @@ const questions = [
   },
   {
     q: "Puis-je annuler une commande ?",
-    a: "Oui, tant que l'établissement ne l'a pas acceptée, ou plus tard si aucun livreur ne l'a encore prise après un long délai d'attente. Une commande déjà payée en ligne puis annulée ou refusée est remboursée sur le même moyen de paiement.",
+    a: "Oui, tant que le restaurant ne l'a pas acceptée, ou plus tard si aucun livreur ne l'a encore prise après un long délai d'attente. Une commande déjà payée en ligne puis annulée ou refusée est remboursée sur le même moyen de paiement.",
   },
   {
-    q: "Je tiens un restaurant ou un magasin : comment rejoindre Tchopi ?",
-    a: "Envoyez votre demande avec le formulaire « Devenir partenaire ». L'équipe vous contacte, crée votre établissement et vous donne l'accès à votre espace : produits, commandes, horaires et statistiques, sur ordinateur ou sur l'application mobile.",
+    q: "Je tiens un restaurant : comment rejoindre Tchopi ?",
+    a: "Inscrivez votre restaurant en quelques minutes avec « Inscrire mon restaurant » : compte, adresse, horaires, puis votre carte. L'équipe Tchopi valide l'inscription (en général sous 48 h) et vos plats deviennent visibles. Vous gérez ensuite commandes, carte et statistiques sur ordinateur ou sur l'application mobile.",
   },
 ];
 

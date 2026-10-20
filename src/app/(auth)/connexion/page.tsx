@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, type FormEvent } from "react";
+import { GoogleButton } from "@/components/google-button";
 import { Button, Field, fieldClass } from "@/components/ui";
 import { credentials, parseIdentifier, safeNext } from "@/lib/auth";
 import { errorMessage } from "@/lib/errors";
@@ -42,7 +43,13 @@ function SignIn() {
     <>
       <h1 className="text-2xl font-extrabold tracking-tight">Se connecter</h1>
       <p className="mt-1 text-sm text-muted">Le même compte que sur l&apos;application mobile.</p>
-      <form onSubmit={submit} className="mt-6 space-y-4">
+      <div className="mt-6">
+        <GoogleButton next={next} />
+      </div>
+      <div className="my-6 flex items-center gap-3 text-xs text-muted" aria-hidden>
+        <span className="h-px flex-1 bg-border" /> ou <span className="h-px flex-1 bg-border" />
+      </div>
+      <form onSubmit={submit} className="space-y-4">
         <Field label="Email ou téléphone">
           <input name="id" required autoComplete="username" placeholder="07 01 02 03 04" className={fieldClass} />
         </Field>

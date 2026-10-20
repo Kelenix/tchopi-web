@@ -79,11 +79,10 @@ export function Field({
   );
 }
 
-export function SectionTitle({ eyebrow, title, body }: { eyebrow?: string; title: string; body?: string }) {
+export function SectionTitle({ title, body }: { title: string; body?: string }) {
   return (
     <div className="max-w-2xl">
-      {eyebrow && <p className="text-sm font-bold uppercase tracking-wider text-primary">{eyebrow}</p>}
-      <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">{title}</h2>
+      <h2 className="text-3xl font-extrabold tracking-[-0.02em] sm:text-[2.6rem] sm:leading-[1.1]">{title}</h2>
       {body && <p className="mt-3 text-muted">{body}</p>}
     </div>
   );

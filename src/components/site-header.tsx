@@ -4,10 +4,10 @@ import { ThemeToggle } from "./theme-toggle";
 import { AccountButton } from "./account-button";
 
 const links = [
-  { href: "/#etablissements", label: "Établissements" },
+  { href: "/#restaurants", label: "Restaurants" },
   { href: "/#fonctionnement", label: "Comment ça marche" },
-  { href: "/#partenaires", label: "Devenir partenaire" },
-  { href: "/#faq", label: "FAQ" },
+  { href: "/#restaurateurs", label: "Restaurateurs" },
+  { href: "/#faq", label: "Questions" },
 ];
 
 export function SiteHeader() {

@@ -105,7 +105,7 @@ export default function CheckoutPage() {
         icon={ShoppingBag}
         title="Votre panier est vide"
         body="Choisissez un établissement et ajoutez des produits."
-        action={<ButtonLink href="/#etablissements">Voir les établissements</ButtonLink>}
+        action={<ButtonLink href="/#restaurants">Voir les restaurants</ButtonLink>}
       />
     );
   }
