@@ -1,15 +1,20 @@
 "use client";
 
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState, type FormEvent } from "react";
+import { Suspense, useEffect, useRef, useState, type FormEvent } from "react";
+import { UserRound } from "lucide-react";
+import { dialog, orThrow } from "@/components/dialog";
 import { useAccount } from "@/components/space-shell";
 import { Button, Card, Field, fieldClass } from "@/components/ui";
 import { passwordProblem } from "@/lib/auth";
+import { mediaUrl } from "@/lib/env";
 import { errorMessage } from "@/lib/errors";
+import { uploadAvatar } from "@/lib/media";
 import { normalizePhone } from "@/lib/phone";
 import { browserClient } from "@/lib/supabase";
 
-type Profile = { first_name: string | null; last_name: string | null; phone: string | null; city: string | null };
+type Profile = { first_name: string | null; last_name: string | null; phone: string | null; city: string | null; avatar_path: string | null };
 
 export default function ProfilePage() {
   return (
@@ -29,10 +34,12 @@ function ProfileForm() {
 
   useEffect(() => {
     db.from("profiles")
-      .select("first_name, last_name, phone, city")
+      .select("first_name, last_name, phone, city, avatar_path")
       .eq("id", session.user.id)
       .single()
-      .then(({ data }) => setProfile(data ?? { first_name: null, last_name: null, phone: session.user.phone ? `+${session.user.phone}` : null, city: null }));
+      .then(({ data }) =>
+        setProfile(data ?? { first_name: null, last_name: null, phone: session.user.phone ? `+${session.user.phone}` : null, city: null, avatar_path: null }),
+      );
   }, [db, session.user]);
 
   async function save(e: FormEvent<HTMLFormElement>) {
@@ -62,6 +69,7 @@ function ProfileForm() {
           <div className="h-64 animate-pulse rounded-field bg-surface-alt" />
         ) : (
           <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">
+            <Avatar userId={session.user.id} path={profile.avatar_path} onChange={(avatar_path) => setProfile({ ...profile, avatar_path })} />
             <Field label="Prénom">
               <input name="first_name" defaultValue={profile.first_name ?? ""} maxLength={60} autoComplete="given-name" className={fieldClass} />
             </Field>
@@ -75,7 +83,7 @@ function ProfileForm() {
               <input name="city" defaultValue={profile.city ?? ""} maxLength={60} className={fieldClass} />
             </Field>
             <p className="text-sm text-muted sm:col-span-2">
-              Identifiant de connexion : <strong className="text-ink">{session.user.email ?? `+${session.user.phone}`}</strong>
+              Identifiant de connexion : <strong className="text-ink">{session.user.email || `+${session.user.phone}`}</strong>
             </p>
             {message && (
               <p role="status" className={`text-sm font-medium sm:col-span-2 ${message.ok ? "text-primary" : "text-danger"}`}>
@@ -88,20 +96,62 @@ function ProfileForm() {
           </form>
         )}
       </Card>
-      <SecurityCard email={session.user.email ?? null} />
+      <SecurityCard email={session.user.email || null} phone={session.user.phone ? `+${session.user.phone}` : null} />
     </>
   );
 }
 
-/** Email de connexion (confirmé par un lien envoyé à la nouvelle adresse) et mot de passe. */
-function SecurityCard({ email }: { email: string | null }) {
+/** Photo de profil : réduite dans le navigateur, déposée dans le dossier du titulaire (RLS), visible tout de suite. */
+function Avatar({ userId, path, onChange }: { userId: string; path: string | null; onChange: (path: string) => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const url = mediaUrl(path);
+  return (
+    <div className="flex items-center gap-4 sm:col-span-2">
+      <button type="button" onClick={() => input.current?.click()} aria-label="Changer la photo de profil" className="relative grid size-20 shrink-0 place-items-center overflow-hidden rounded-full bg-primary-soft text-primary">
+        {url ? <Image src={url} alt="" fill sizes="80px" className="object-cover" /> : <UserRound className="size-8" aria-hidden />}
+      </button>
+      <div>
+        <Button variant="soft" className="h-9 px-4 text-xs" onClick={() => input.current?.click()}>
+          Changer la photo
+        </Button>
+        {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+      </div>
+      <input
+        ref={input}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        hidden
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          try {
+            onChange(await uploadAvatar(userId, file));
+            setError(null);
+          } catch (err) {
+            setError(errorMessage(err));
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+/** E-mail, mot de passe (mot de passe actuel exigé : identité confirmée) et suppression du compte. */
+function SecurityCard({ email, phone }: { email: string | null; phone: string | null }) {
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const db = browserClient();
+
   async function change(e: FormEvent<HTMLFormElement>, kind: "email" | "password") {
     e.preventDefault();
     const form = e.currentTarget;
-    const value = String(new FormData(form).get(kind)).trim();
+    const data = new FormData(form);
+    const value = String(data.get(kind)).trim();
     if (kind === "password" && passwordProblem(value)) return setMessage({ ok: false, text: passwordProblem(value)! });
-    const { error } = await browserClient().auth.updateUser(kind === "email" ? { email: value } : { password: value });
+    const password = String(data.get("current"));
+    const check = await db.auth.signInWithPassword(email ? { email, password } : { phone: phone ?? "", password });
+    if (check.error) return setMessage({ ok: false, text: "Mot de passe actuel incorrect." });
+    const { error } = await db.auth.updateUser(kind === "email" ? { email: value } : { password: value });
     if (!error) form.reset();
     setMessage(
       error
@@ -109,27 +159,32 @@ function SecurityCard({ email }: { email: string | null }) {
         : { ok: true, text: kind === "email" ? "Lien de confirmation envoyé à la nouvelle adresse." : "Mot de passe modifié." },
     );
   }
+
+  const current = (
+    <Field label="Mot de passe actuel">
+      <input name="current" type="password" required autoComplete="current-password" className={fieldClass} />
+    </Field>
+  );
+
   return (
-    <Card className="mt-6 max-w-xl space-y-5 p-6">
+    <Card className="mt-6 max-w-xl space-y-6 p-6">
       <h2 className="text-lg font-bold">Sécurité</h2>
-      <form onSubmit={(e) => change(e, "email")} className="flex flex-wrap items-end gap-3">
-        <div className="min-w-56 flex-1">
-          <Field label="Adresse e-mail">
-            <input name="email" type="email" required placeholder={email ?? "vous@exemple.ci"} autoComplete="email" className={fieldClass} />
-          </Field>
-        </div>
-        <Button type="submit" variant="soft">
-          Changer
+      <form onSubmit={(e) => change(e, "email")} className="grid gap-3 sm:grid-cols-2">
+        <Field label="Nouvelle adresse e-mail">
+          <input name="email" type="email" required placeholder={email ?? "vous@exemple.ci"} autoComplete="email" className={fieldClass} />
+        </Field>
+        {current}
+        <Button type="submit" variant="soft" className="sm:col-span-2 sm:justify-self-start">
+          Changer l&apos;e-mail
         </Button>
       </form>
-      <form onSubmit={(e) => change(e, "password")} className="flex flex-wrap items-end gap-3">
-        <div className="min-w-56 flex-1">
-          <Field label="Nouveau mot de passe" hint="8 caractères au moins, lettres et chiffres.">
-            <input name="password" type="password" required minLength={8} autoComplete="new-password" className={fieldClass} />
-          </Field>
-        </div>
-        <Button type="submit" variant="soft">
-          Changer
+      <form onSubmit={(e) => change(e, "password")} className="grid gap-3 border-t border-border pt-6 sm:grid-cols-2">
+        <Field label="Nouveau mot de passe" hint="8 caractères au moins, lettres et chiffres.">
+          <input name="password" type="password" required minLength={8} autoComplete="new-password" className={fieldClass} />
+        </Field>
+        {current}
+        <Button type="submit" variant="soft" className="sm:col-span-2 sm:justify-self-start">
+          Changer le mot de passe
         </Button>
       </form>
       {message && (
@@ -137,6 +192,32 @@ function SecurityCard({ email }: { email: string | null }) {
           {message.text}
         </p>
       )}
+      <div className="rounded-field border border-danger/40 p-4">
+        <p className="text-sm font-semibold">Supprimer mon compte</p>
+        <p className="mt-1 text-xs text-muted">
+          Vos données personnelles sont effacées et vous êtes déconnecté. L&apos;historique des commandes est conservé sans votre nom
+          (obligations comptables). Impossible avec une commande en cours.
+        </p>
+        <Button
+          variant="outline"
+          className="mt-3 h-9 px-4 text-xs text-danger"
+          onClick={async () => {
+            const done = await dialog.confirm({
+              title: "Supprimer définitivement votre compte ?",
+              body: "Cette action est irréversible.",
+              tone: "danger",
+              confirmLabel: "Supprimer mon compte",
+              action: () => orThrow(db.functions.invoke("account-delete", { body: {} })),
+            });
+            if (done) {
+              await db.auth.signOut();
+              window.location.replace(window.location.origin);
+            }
+          }}
+        >
+          Supprimer mon compte…
+        </Button>
+      </div>
     </Card>
   );
 }

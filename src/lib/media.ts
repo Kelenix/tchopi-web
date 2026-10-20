@@ -24,3 +24,15 @@ export async function uploadEstablishmentImage(establishmentId: string, file: Fi
   if (error) throw error;
   return path;
 }
+
+/** Photo de profil (dossier « avatars/<compte> », seul le titulaire peut y déposer) enregistrée sur le profil. */
+export async function uploadAvatar(userId: string, file: File): Promise<string> {
+  const blob = await shrink(file, 512);
+  const path = `avatars/${userId}/${Date.now()}.jpg`;
+  const db = browserClient();
+  const { error } = await db.storage.from("media").upload(path, blob, { contentType: "image/jpeg" });
+  if (error) throw error;
+  const saved = await db.from("profiles").update({ avatar_path: path }).eq("id", userId);
+  if (saved.error) throw saved.error;
+  return path;
+}
