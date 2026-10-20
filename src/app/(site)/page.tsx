@@ -148,7 +148,7 @@ function HeroSteps() {
     [Wifi, "Suivez en direct", "préparation, livreur, code de livraison"],
   ] as const;
   return (
-    <ol className="relative grid content-center gap-4" aria-label="Commander en 3 étapes">
+    <ol className="relative hidden content-center gap-4 lg:grid" aria-label="Commander en 3 étapes">
       {steps.map(([Icon, title, body], i) => (
         <li
           key={title}

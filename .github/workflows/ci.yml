@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    name: Lint, types, tests, compilation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - name: Paquet de la version (standalone + fichiers statiques)
+        run: |
+          cp -r public .next/standalone/public
+          cp -r .next/static .next/standalone/.next/static
+          tar -czf tchopi-web.tar.gz -C .next/standalone .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tchopi-web
+          path: tchopi-web.tar.gz
+          retention-days: 7
+
+  deploy:
+    name: Mise en ligne sur le VPS
+    needs: verify
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-web
+      cancel-in-progress: false
+    env:
+      CONFIGURED: ${{ secrets.VPS_SSH_KEY != '' && secrets.VPS_HOST != '' && secrets.VPS_KNOWN_HOSTS != '' }}
+    steps:
+      - name: Déploiement non configuré
+        if: env.CONFIGURED != 'true'
+        run: echo "::warning::Secrets VPS_SSH_KEY, VPS_HOST et VPS_KNOWN_HOSTS absents (docs/mise-en-ligne.md) : site non déployé."
+      - uses: actions/checkout@v4
+        if: env.CONFIGURED == 'true'
+      - uses: actions/download-artifact@v4
+        if: env.CONFIGURED == 'true'
+        with:
+          name: tchopi-web
+      - name: Accès SSH au VPS (clé réservée à GitHub, empreinte du serveur vérifiée)
+        if: env.CONFIGURED == 'true'
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+      - name: Envoi et mise en ligne
+        if: env.CONFIGURED == 'true'
+        run: |
+          host="root@${{ secrets.VPS_HOST }}"
+          ssh "$host" 'mkdir -p /opt/tchopi-web/deploy /opt/tchopi-web/releases'
+          scp -q deploy/compose.yml deploy/nginx.conf deploy/server.sh "$host:/opt/tchopi-web/deploy/"
+          scp -q tchopi-web.tar.gz "$host:/tmp/tchopi-web.tar.gz"
+          ssh "$host" 'sh /opt/tchopi-web/deploy/server.sh deploy /tmp/tchopi-web.tar.gz'

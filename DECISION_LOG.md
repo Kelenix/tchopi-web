@@ -4,9 +4,24 @@
 
 ---
 
+## ADR-W04 — Pages publiques côté serveur, espaces connectés dans le navigateur
+
+- **Date** : 2026-10-20 · **Statut** : Accepté (mode AUTONOME) · **Décideur** : Claude (solution-architect, security-engineer)
+- **Contexte** : Next.js 16 (Cache Components) ; l'app mobile lit déjà toutes ses données avec la clé publique, la
+  session du compte et la RLS.
+- **Décision** : accueil, fiches et recherche rendus côté serveur et mis en cache quelques minutes (fonctions
+  publiques, sans session) ; espaces connectés rendus dans le navigateur avec la session Supabase et le temps réel,
+  exactement comme le mobile. Aucune clé de service dans le site ; toute règle est vérifiée par la base.
+- **Alternatives écartées** : session en cookie et rendu serveur des espaces (double chemin d'autorisation, aucune
+  donnée supplémentaire protégée) ; Flutter web.
+- **Conséquences** : la sécurité des espaces repose sur la RLS et les fonctions serveur, déjà testées (pgTAP).
+- **Impact** : sécurité (moyen, mêmes garanties que le mobile), technique (réversible).
+
+---
+
 ## ADR-W03 — Ajouts au backend commun plutôt qu'un backend web
 
-- **Date** : 2026-10-20 · **Statut** : Proposé (plan) · **Décideur** : Claude (solution-architect, database-architect)
+- **Date** : 2026-10-20 · **Statut** : Accepté (fait : `../tchopi` ADR-042) · **Décideur** : Claude (solution-architect, database-architect)
 - **Contexte** : magasins, options de produits, catalogue public, retour de paiement web et candidatures manquent.
 - **Décision** : ajoutés dans `../tchopi/supabase` (migrations + pgTAP), utilisables par le mobile et le web ;
   catalogue public par fonctions en lecture seule exposant des colonnes sûres (pas d'accès anonyme aux tables).
@@ -24,7 +39,7 @@
 
 ## ADR-W01 — Next.js séparé plutôt que la version web de l'app Flutter
 
-- **Date** : 2026-10-20 · **Statut** : Proposé (plan) · **Décideur** : Claude (solution-architect, seo-engineer)
+- **Date** : 2026-10-20 · **Statut** : Accepté (mode AUTONOME) · **Décideur** : Claude (solution-architect, seo-engineer)
 - **Contexte** : l'app Flutter se compile pour le navigateur, mais l'accueil doit être rapide et référencé, et les
   espaces de gestion pensés pour l'ordinateur.
 - **Décision** : projet Next.js `tchopi-web` (rendu serveur, SEO, interface bureau), même backend et mêmes jetons de

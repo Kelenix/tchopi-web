@@ -1,0 +1,25 @@
+# Site web Tchopi sur le VPS (ADR-W02) : sortie « standalone » de Next.js servie par Node, derrière le nginx de l'hôte.
+# Version active : /opt/tchopi-web/current (lien vers releases/<commit>), installée par deploy/server.sh.
+services:
+  web:
+    image: node:24-alpine
+    container_name: tchopi-web
+    restart: unless-stopped
+    working_dir: /app
+    command: ["node", "server.js"]
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+    volumes:
+      - /opt/tchopi-web/current:/app
+    # Port local seulement : le public passe par nginx (HTTPS).
+    ports:
+      - "127.0.0.1:3010:3000"
+    # VPS partagé avec l'API et d'autres sites.
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

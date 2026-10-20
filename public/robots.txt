@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /espace
+Allow: /
+
+Sitemap: https://tchopi.com/sitemap.xml
