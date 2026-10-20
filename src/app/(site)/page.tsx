@@ -1,11 +1,14 @@
 import { Suspense } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { ArrowRight, ChartColumn, ClipboardList, MapPinned, Search, Store, Wifi } from "lucide-react";
-import { EstablishmentCard, ProductCard } from "@/components/catalog-cards";
-import { CitySelect } from "@/components/city-select";
+import { ArrowRight, ChartColumn, ClipboardList, MapPinned, Store, Wifi } from "lucide-react";
+import { EstablishmentCard } from "@/components/catalog-cards";
 import { EmptyState } from "@/components/empty-state";
 import { Faq } from "@/components/faq";
+import { DishMarquee } from "@/components/home/dish-marquee";
+import { GlassCity } from "@/components/home/glass-city";
+import { Hero } from "@/components/home/hero";
 import { HeroMap } from "@/components/home/hero-map";
 import { Process } from "@/components/home/process";
 import { ButtonLink, SectionTitle } from "@/components/ui";
@@ -16,31 +19,34 @@ type Search = { ville?: string; categorie?: string };
 export default function HomePage({ searchParams }: PageProps<"/">) {
   return (
     <>
-      <section className="relative overflow-hidden">
-        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(60rem_40rem_at_85%_-10%,var(--primary-soft),transparent_70%)]" />
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-20 pt-10 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:gap-14 lg:pt-16">
-          <div>
-            <Suspense fallback={<p className="h-7" />}>
-              <LiveCount searchParams={searchParams} />
-            </Suspense>
-            <h1 className="mt-5 text-[2.6rem] font-extrabold leading-[1.02] tracking-[-0.03em] sm:text-6xl">
-              Vos plats préférés, livrés chauds.
-            </h1>
-            <p className="mt-5 max-w-lg text-lg leading-relaxed text-muted">
-              Garba, alloco, poulet braisé ou pizza : commandez dans les restaurants de votre ville, payez à la
-              livraison ou en ligne, et suivez votre livreur sur la carte jusqu&apos;à votre porte.
-            </p>
-            <Suspense fallback={<div className="mt-8 h-[132px] max-w-xl animate-pulse rounded-[24px] bg-surface-alt" />}>
-              <HeroSearch searchParams={searchParams} />
-            </Suspense>
-          </div>
-          <HeroMap />
-        </div>
-      </section>
+      <Hero
+        badge={
+          <Suspense>
+            <LiveBadge searchParams={searchParams} />
+          </Suspense>
+        }
+        city={
+          <Suspense>
+            <HeroCity searchParams={searchParams} />
+          </Suspense>
+        }
+      />
 
       <Suspense fallback={<CatalogSkeleton />}>
         <Catalog searchParams={searchParams} />
       </Suspense>
+
+      <section className="mx-auto mt-28 grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1fr_1.15fr]">
+        <div>
+          <SectionTitle title="Suivez votre livreur, rue par rue" body="Dès qu'il récupère votre commande, sa position s'affiche sur la carte avec l'heure d'arrivée estimée. À la porte, un code à 4 chiffres confirme la remise." />
+          <ul className="mt-6 space-y-3 text-sm text-muted">
+            <li>Trajets calculés sur les vraies routes de votre ville</li>
+            <li>Notification à chaque étape, sur le site et sur l&apos;application</li>
+            <li>Livreur joignable d&apos;un appui</li>
+          </ul>
+        </div>
+        <HeroMap />
+      </section>
 
       <section id="fonctionnement" className="mx-auto mt-28 max-w-6xl scroll-mt-24 px-4 sm:px-6">
         <SectionTitle title="De la cuisine à votre porte" body="Chaque étape s'affiche en direct dans votre suivi, sur le site comme sur l'application." />
@@ -63,54 +69,26 @@ async function selectedZone(searchParams: Promise<Search>): Promise<{ zones: Zon
 }
 
 /** Indicateur en direct : restaurants réellement ouverts dans la ville choisie. */
-async function LiveCount({ searchParams }: { searchParams: Promise<Search> }) {
+async function LiveBadge({ searchParams }: { searchParams: Promise<Search> }) {
   const data = await selectedZone(searchParams)
     .then(async ({ zone }) => (zone ? { zone, open: (await getEstablishments(zone.id)).filter((e) => e.is_open).length } : null))
     .catch(() => null);
-  if (!data) return null;
-  const { zone, open } = data;
   return (
-      <p className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1.5 text-sm font-semibold shadow-float">
-        <span className="relative flex size-2.5">
-          {open > 0 && <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-60 motion-reduce:hidden" />}
-          <span className={`relative inline-flex size-2.5 rounded-full ${open ? "bg-success" : "bg-muted"}`} />
-        </span>
-        {open ? `${open} restaurant${open > 1 ? "s" : ""} ouvert${open > 1 ? "s" : ""} à ${zone.city} en ce moment` : `Livraison à ${zone.city}`}
-      </p>
+    <p className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-semibold">
+      <span className="relative flex size-2">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#3dd68c] opacity-70 motion-reduce:hidden" />
+        <span className="relative inline-flex size-2 rounded-full bg-[#3dd68c]" />
+      </span>
+      {data?.open
+        ? `${data.open} restaurant${data.open > 1 ? "s" : ""} ouvert${data.open > 1 ? "s" : ""} à ${data.zone.city} en ce moment`
+        : "Livraison de repas en Côte d'Ivoire"}
+    </p>
   );
 }
 
-async function HeroSearch({ searchParams }: { searchParams: Promise<Search> }) {
-  let data: Awaited<ReturnType<typeof selectedZone>>;
-  try {
-    data = await selectedZone(searchParams);
-  } catch {
-    return null;
-  }
-  const { zones, zone } = data;
-  if (!zone) return null;
-  return (
-    <div className="mt-8 max-w-xl rounded-[24px] border border-border bg-surface p-2 shadow-float">
-      <div className="grid gap-2 sm:grid-cols-[minmax(0,0.85fr)_minmax(0,1.35fr)]">
-        <CitySelect zones={zones} current={zone.id} />
-        <form action="/recherche" className="flex h-14 items-center gap-2 rounded-field bg-surface-alt pl-4 pr-1.5">
-          <input type="hidden" name="ville" value={zone.id} />
-          <Search className="size-5 shrink-0 text-muted" aria-hidden />
-          <label htmlFor="q" className="sr-only">
-            Rechercher un plat ou un restaurant
-          </label>
-          <input id="q" name="q" minLength={2} required placeholder="Garba, alloco, poulet braisé…" className="h-full min-w-0 flex-1 bg-transparent text-sm focus:outline-none" />
-          <button type="submit" className="h-11 rounded-full bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110">
-            Chercher
-          </button>
-        </form>
-      </div>
-      <Link href="#restaurants" className="mt-1 flex items-center justify-between rounded-field px-4 py-3 text-sm font-semibold text-muted transition hover:bg-surface-alt hover:text-ink">
-        Voir tous les restaurants de {zone.city}
-        <ArrowRight className="size-4" aria-hidden />
-      </Link>
-    </div>
-  );
+async function HeroCity({ searchParams }: { searchParams: Promise<Search> }) {
+  const data = await selectedZone(searchParams).catch(() => null);
+  return data?.zone ? <GlassCity zones={data.zones} current={data.zone.id} /> : null;
 }
 
 async function loadCatalog(searchParams: Promise<Search>) {
@@ -137,7 +115,18 @@ async function Catalog({ searchParams }: { searchParams: Promise<Search> }) {
 
   return (
     <>
-      <section id="restaurants" className="mx-auto mt-6 max-w-6xl scroll-mt-24 px-4 sm:px-6">
+      {featured.length >= 3 && (
+        <section className="bg-[#0b0806] pb-24 pt-4 text-white">
+          <div className="mx-auto mb-10 flex max-w-6xl flex-wrap items-end justify-between gap-4 px-4 sm:px-6">
+            <h2 className="font-display text-4xl leading-tight sm:text-6xl">
+              Ce soir, on mange <span className="italic text-[#ffb35c]">quoi ?</span>
+            </h2>
+            <p className="max-w-xs text-sm text-white/60">Les plats les plus commandés à {zone.city} ces 30 derniers jours.</p>
+          </div>
+          <DishMarquee products={featured} />
+        </section>
+      )}
+      <section id="restaurants" className="mx-auto mt-24 max-w-6xl scroll-mt-24 px-4 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <SectionTitle title={`Restaurants à ${zone.city}`} body={establishments.length ? "Ouverts d'abord, puis ceux qui ouvrent bientôt." : undefined} />
         </div>
@@ -179,16 +168,6 @@ async function Catalog({ searchParams }: { searchParams: Promise<Search> }) {
         </div>
       </section>
 
-      {featured.length > 0 && (
-        <section className="mx-auto mt-24 max-w-6xl px-4 sm:px-6">
-          <SectionTitle title={`Les plus commandés à ${zone.city}`} body="D'après les livraisons des 30 derniers jours." />
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {featured.map((p) => (
-              <ProductCard key={p.id} p={p} />
-            ))}
-          </div>
-        </section>
-      )}
     </>
   );
 }
@@ -201,11 +180,13 @@ function Restaurateurs() {
     ["Recevez vos commandes", "Dès la validation par l'équipe Tchopi."],
   ];
   return (
-    <section id="restaurateurs" className="mt-28 scroll-mt-24 bg-[#0f1412] text-white">
-      {/* Bandeau toujours sombre, dans les deux thèmes. */}
-      <div className="mx-auto grid max-w-6xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[1.1fr_1fr]">
+    <section id="restaurateurs" className="relative mt-28 scroll-mt-24 overflow-hidden bg-[#0b0806] text-white">
+      {/* Bandeau toujours sombre, dans les deux thèmes : photo d'un maquis sous un voile, étapes en verre. */}
+      <Image src="/hero/cover-maquis-chez-tante.jpg" alt="" fill sizes="100vw" className="object-cover opacity-45" />
+      <div aria-hidden className="absolute inset-0 bg-[linear-gradient(90deg,#0b0806_15%,rgba(11,8,6,0.7)_55%,rgba(11,8,6,0.4))]" />
+      <div className="relative mx-auto grid max-w-6xl gap-12 px-4 py-24 sm:px-6 lg:grid-cols-[1.1fr_1fr]">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight sm:text-5xl">Votre restaurant, ouvert à toute la ville.</h2>
+          <h2 className="font-display text-4xl leading-[1.05] sm:text-6xl">Votre restaurant, ouvert à <span className="italic text-[#ffb35c]">toute la ville.</span></h2>
           <p className="mt-4 max-w-md text-white/70">
             Inscription gratuite, commission seulement sur les ventes. Gérez tout depuis votre ordinateur ou votre
             téléphone.
@@ -231,7 +212,7 @@ function Restaurateurs() {
         </div>
         <ol className="grid content-center gap-3">
           {steps.map(([title, body], i) => (
-            <li key={title} className="flex items-center gap-4 rounded-2xl bg-white/[0.06] p-5 ring-1 ring-white/10">
+            <li key={title} className="glass flex items-center gap-4 rounded-3xl p-5">
               <span className="tabular grid size-10 shrink-0 place-items-center rounded-full bg-white/10 font-bold text-[#3dd68c]">{i + 1}</span>
               <span>
                 <span className="block font-bold">{title}</span>

@@ -82,7 +82,7 @@ export function Field({
 export function SectionTitle({ title, body }: { title: string; body?: string }) {
   return (
     <div className="max-w-2xl">
-      <h2 className="text-3xl font-extrabold tracking-[-0.02em] sm:text-[2.6rem] sm:leading-[1.1]">{title}</h2>
+      <h2 className="font-display text-4xl leading-[1.05] sm:text-[3.4rem]">{title}</h2>
       {body && <p className="mt-3 text-muted">{body}</p>}
     </div>
   );

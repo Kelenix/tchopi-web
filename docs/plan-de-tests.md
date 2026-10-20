@@ -9,11 +9,11 @@ Comptes de test : `../tchopi/docs/donnees-de-test.md`. Ouvrir le site et l'app m
 
 | # | Rôle | Parcours | Attendu |
 |---|------|----------|---------|
-| 1 | Visiteur | Accueil → changer de ville → catégorie → fiche → recherche « garba » | Données réelles ; états vides soignés pour une ville sans établissement |
-| 2 | Visiteur | Formulaire « Devenir partenaire » | Message de confirmation ; candidature visible dans Admin → Établissements |
+| 1 | Visiteur | Accueil (carte animée, trajet réel) → changer de ville → cuisine → fiche → recherche « garba » | Données réelles ; états vides soignés pour une ville sans restaurant |
+| 2 | Restaurateur | « Inscrire mon restaurant » → compte (email ou Google) → assistant 4 étapes | Bandeau « en validation » ; restaurant listé dans Admin → Restaurants → À valider ; visible sur l'accueil après validation |
 | 3 | Client | Inscription (numéro autorisé, code) → profil → panier → nouvelle adresse sur la carte → Espèces → Commander | Commande créée ; suivi en direct ; code de livraison affiché |
 | 4 | Établissement (`06`) | Espace établissement → activer les alertes sonores → accepter → préparation → prête | Son et bandeau à l'arrivée ; statuts visibles en direct chez le client (web et mobile) |
 | 5 | Établissement | Produits → ajouter un produit avec photo et options (Taille obligatoire, Suppléments) | Visible sur la fiche publique ; le client doit choisir la taille |
 | 6 | Livreur (`05`, mobile) | Accepter → récupérer → livrer avec le code | Restaurant web : « Remise au livreur » puis message « livrée » |
-| 7 | Admin (`03`) | Commandes à traiter, attribution manuelle, établissement (magasin), gérant, livreurs, paiements, zones | Actions refusées à tout autre compte |
+| 7 | Admin (`03`) | Commandes à traiter, attribution manuelle, validation d'un restaurant (commission), gérant, livreurs, paiements, zones | Actions refusées à tout autre compte |
 | 8 | Tous | Thème clair / sombre, téléphone / tablette / ordinateur | Aucun débordement, contrastes lisibles |

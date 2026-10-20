@@ -12,10 +12,11 @@ const links = [
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
+    <header className="sticky top-0 z-40 px-3 pt-3">
+      {/* Pilule en verre dépoli, posée au-dessus du contenu (sur l'accueil, au-dessus de la photo). */}
+      <div className="glass-light mx-auto flex h-14 max-w-6xl items-center gap-4 rounded-full pl-4 pr-2">
         <Logo />
-        <nav aria-label="Navigation principale" className="hidden flex-1 items-center gap-1 md:flex">
+        <nav aria-label="Navigation principale" className="hidden flex-1 items-center justify-center gap-1 md:flex">
           {links.map((l) => (
             <Link
               key={l.href}
@@ -26,7 +27,7 @@ export function SiteHeader() {
             </Link>
           ))}
         </nav>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1.5">
           <ThemeToggle />
           <AccountButton />
         </div>

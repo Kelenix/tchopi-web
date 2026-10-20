@@ -29,6 +29,10 @@ Voir `docs/plan-de-realisation.md` § 5.
 
 ## Journal
 
+- 2026-10-21 — Dépôt GitHub en ligne (branche `main`). Plateforme 100 % restauration (colis et magasins retirés) ;
+  accueil refait avec carte animée (trajet routier réel, étapes synchronisées) ; connexion Google (PKCE) ;
+  assistant d'inscription des restaurants + validation admin ; emails par Resend côté serveur (`../tchopi` ADR-043 à
+  045). Reste : clé Resend, identifiants Google, DNS, première installation, logo.
 - 2026-10-20 — AUTONOME : W0 à W6 livrés (accueil, comptes, établissement, client, admin, livreur) ; backend commun
   étendu (`../tchopi` ADR-042, 20 tests pgTAP verts en CI) ; CI et déploiement VPS prêts. Non vérifié : parcours
   connectés de bout en bout (comptes du serveur en ligne).

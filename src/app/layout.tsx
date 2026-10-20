@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Instrument_Serif, Plus_Jakarta_Sans } from "next/font/google";
 import { env } from "@/lib/env";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ variable: "--font-jakarta", subsets: ["latin"] });
+// Titres éditoriaux de la page d'accueil.
+const serif = Instrument_Serif({ variable: "--font-serif", subsets: ["latin"], weight: "400", style: ["normal", "italic"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.siteUrl),
@@ -25,7 +27,7 @@ const themeScript = `(function(){try{var m=document.cookie.match(/(?:^|; )theme=
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" data-theme="light" suppressHydrationWarning className={`${jakarta.variable} h-full antialiased`}>
+    <html lang="fr" data-theme="light" suppressHydrationWarning className={`${jakarta.variable} ${serif.variable} h-full antialiased`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
