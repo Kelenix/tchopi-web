@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Embers } from "@/components/home/embers";
+import logo from "../../../public/brand/logo.png";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -11,6 +12,10 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
         <Image src="/hero/cover-grill-du-plateau.jpg" alt="" fill priority sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
         <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,8,6,0.35),rgba(11,8,6,0.85))]" />
         <Embers count={45} />
+        {/* Logo officiel en grand sur la photo (grands écrans) ; sur mobile, il est en haut du formulaire. */}
+        <div className="absolute inset-x-0 top-[14%] hidden justify-center px-12 lg:flex">
+          <Image src={logo} alt="Tchopi" priority className="h-auto w-full max-w-[380px] drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]" />
+        </div>
         <div className="absolute inset-x-0 bottom-0 hidden p-12 text-white lg:block">
           <p className="max-w-md font-display text-5xl leading-[1.02]">
             Le goût d&apos;Abidjan, <span className="italic text-[#ffb35c]">à portée de clic.</span>
@@ -20,8 +25,8 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
       </div>
       <div className="relative flex flex-1 flex-col">
         <header className="flex h-20 items-center justify-between px-5 sm:px-8">
-          <span className="glass-nav rounded-full py-1.5 pl-2 pr-4">
-            <Logo />
+          <span className="lg:invisible">
+            <Logo height={56} />
           </span>
           <span className="glass-nav rounded-full">
             <ThemeToggle />
