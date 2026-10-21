@@ -1,8 +1,9 @@
 # Site web Tchopi sur le VPS, piloté depuis ce PC (même accès SSH « tchopi » que le backend : ../tchopi/vps.ps1 cle).
 #   .\deploy\vps.ps1 installer tchopi.com   première installation : site nginx, HTTPS, puis première version
 #   .\deploy\vps.ps1 deployer               compile et met en ligne la version commitée (la CI le fait à chaque push)
+#   .\deploy\vps.ps1 ci                     donne à GitHub Actions l'accès au VPS (secrets du dépôt), puis lance la CI
 param(
-  [Parameter(Mandatory)][ValidateSet('installer', 'deployer')][string]$Action,
+  [Parameter(Mandatory)][ValidateSet('installer', 'deployer', 'ci')][string]$Action,
   [string]$Domaine
 )
 
@@ -23,6 +24,7 @@ function Send-Deploy {
 
 # Sortie « standalone » + fichiers statiques, empaquetée pour le serveur.
 function Send-Build {
+  if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) { Fail 'pnpm introuvable : passer par GitHub Actions (.\deploy\vps.ps1 ci)' }
   Push-Location $root
   try {
     pnpm install --frozen-lockfile; if ($LASTEXITCODE -ne 0) { Fail 'installation des dépendances' }
@@ -47,6 +49,33 @@ switch ($Action) {
     Send-Build
     Remote "sh /opt/tchopi-web/deploy/server.sh install $Domaine"
     Write-Host "Site en ligne : https://$Domaine" -ForegroundColor Green
+  }
+  'ci' {
+    # Clé réservée à GitHub Actions (jamais celle de ce PC), autorisée sur le VPS ; adresse, empreinte du VPS et clé
+    # privée enregistrées comme secrets du dépôt par gh (connecté : gh auth login). La clé ne s'affiche jamais.
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { Fail 'GitHub CLI absent : winget install GitHub.cli' }
+    gh auth status *> $null
+    if ($LASTEXITCODE -ne 0) { Fail 'GitHub CLI non connecté : gh auth login' }
+    $key = Join-Path $env:TEMP 'tchopi-web-github'
+    Remove-Item "$key", "$key.pub" -ErrorAction SilentlyContinue
+    Start-Process ssh-keygen -ArgumentList "-q -t ed25519 -N `"`" -C tchopi-web-github -f `"$key`"" -NoNewWindow -Wait
+    $public = (Get-Content "$key.pub" -Raw).Trim()
+    Remote "grep -qxF '$public' ~/.ssh/authorized_keys || echo '$public' >> ~/.ssh/authorized_keys"
+    $address = ((ssh -G tchopi | Select-String '^hostname ').Line -split ' ')[1]
+    $known = ssh-keygen -F $address | Where-Object { $_ -notmatch '^#' }
+    if (-not $known) { Fail 'empreinte du VPS absente de known_hosts : se connecter une fois (ssh tchopi)' }
+    Push-Location $root
+    try {
+      Get-Content $key -Raw | gh secret set VPS_SSH_KEY
+      if ($LASTEXITCODE -ne 0) { Fail 'enregistrement des secrets du dépôt' }
+      $address | gh secret set VPS_HOST
+      ($known -join "`n") | gh secret set VPS_KNOWN_HOSTS
+      gh workflow run ci.yml --ref main
+    } finally {
+      Pop-Location
+      Remove-Item "$key", "$key.pub" -ErrorAction SilentlyContinue
+    }
+    Write-Host 'Mise en ligne automatique en place ; premier passage lancé (GitHub → Actions → CI).' -ForegroundColor Green
   }
   'deployer' {
     Send-Deploy

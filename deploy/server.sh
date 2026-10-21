@@ -15,7 +15,7 @@ install() {
     ln -sf "$site" /etc/nginx/sites-enabled/tchopi-web.conf
     nginx -t && systemctl reload nginx
   fi
-  certbot --nginx -d "$1" -d "www.$1" --non-interactive --redirect --keep-until-expiring
+  certbot --nginx -d "$1" -d "www.$1" --non-interactive --redirect --keep-until-expiring     --agree-tos --register-unsafely-without-email
 }
 
 deploy() {

@@ -72,3 +72,5 @@ jobs:
           scp -q deploy/compose.yml deploy/nginx.conf deploy/server.sh "$host:/opt/tchopi-web/deploy/"
           scp -q tchopi-web.tar.gz "$host:/tmp/tchopi-web.tar.gz"
           ssh "$host" 'sh /opt/tchopi-web/deploy/server.sh deploy /tmp/tchopi-web.tar.gz'
+          # Site nginx et certificat HTTPS : créés au premier passage, puis seulement vérifiés (certificat gardé).
+          ssh "$host" "sh /opt/tchopi-web/deploy/server.sh install ${{ vars.WEB_DOMAIN || 'tchopi.com' }}"

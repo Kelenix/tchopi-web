@@ -14,19 +14,18 @@
    ```bash
    git push -u origin main
    ```
-3. **Secrets du dépôt** (GitHub → Settings → Secrets → Actions) : `VPS_SSH_KEY`, `VPS_HOST`, `VPS_KNOWN_HOSTS`, avec
-   les mêmes valeurs que pour le dépôt `tchopi` (clé réservée à GitHub). Sans eux, la CI vérifie mais ne déploie pas.
+3. **Accès de GitHub Actions au VPS** (une fois, depuis ce PC, GitHub CLI connecté par `gh auth login`) :
+   ```bash
+   .\deploy\vps.ps1 ci
+   ```
+   Crée une clé réservée à GitHub, l'autorise sur le VPS, enregistre les secrets `VPS_SSH_KEY`, `VPS_HOST` et
+   `VPS_KNOWN_HOSTS` du dépôt (la clé ne s'affiche jamais), puis lance la CI. Sans eux, la CI vérifie sans déployer.
 
-## 2. Première installation (une fois, depuis ce PC)
+## 2. Première mise en ligne
 
-Accès SSH « tchopi » déjà configuré pour le backend (`../tchopi/vps.ps1 cle`), puis :
-
-```bash
-.\deploy\vps.ps1 installer tchopi.com
-```
-
-Le script compile le site, l'envoie, crée le site nginx (`tchopi.com` et `www.tchopi.com` → `tchopi.com`) et
-demande le certificat HTTPS (certbot).
+Faite par GitHub Actions : après l'installation de la version, le job crée le site nginx (`tchopi.com`, `www` →
+`tchopi.com`) et le certificat HTTPS au premier passage, puis se contente de les vérifier. Domaine modifiable par la
+variable de dépôt `WEB_DOMAIN`. Sans GitHub : `.\deploy\vps.ps1 installer tchopi.com` (pnpm requis sur ce PC).
 
 ## 3. Ensuite
 
