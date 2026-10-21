@@ -16,12 +16,11 @@ type CourierRow = {
   plate_number: string | null;
   id_type: string | null;
   id_number: string | null;
-  residence: string | null;
   photo_path: string | null;
   status: Status;
   is_online: boolean;
   updated_at: string;
-  profile: { first_name: string | null; last_name: string | null; phone: string | null } | null;
+  profile: { first_name: string | null; last_name: string | null; phone: string | null; city: string | null } | null;
   zone: { name: string } | null;
 };
 
@@ -44,7 +43,7 @@ export default function AdminCouriersPage() {
   useEffect(() => {
     let alive = true;
     db.from("couriers")
-      .select("*, profile:profiles(first_name, last_name, phone), zone:zones(name)")
+      .select("*, profile:profiles(first_name, last_name, phone, city), zone:zones(name)")
       .eq("status", tab)
       .order("updated_at", { ascending: false })
       .then(({ data }) => alive && setRows({ tab, couriers: (data ?? []) as unknown as CourierRow[] }));
@@ -121,7 +120,7 @@ export default function AdminCouriersPage() {
                         Pièce ({c.id_type}) : <span className="font-mono">{c.id_number}</span>
                       </p>
                     )}
-                    {c.residence && <p className="text-sm text-muted">Réside : {c.residence}</p>}
+                    {c.profile?.city && <p className="text-sm text-muted">Ville : {c.profile.city}</p>}
                     <p className="text-xs text-muted">Mis à jour {formatDateTime(c.updated_at)}</p>
                     {c.status === "approved" && <Badge tone={c.is_online ? "success" : "neutral"}>{c.is_online ? "En ligne" : "Hors ligne"}</Badge>}
                     <div className="flex flex-wrap gap-2 pt-2">

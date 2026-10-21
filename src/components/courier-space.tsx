@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Bike, Search, UserRound } from "lucide-react";
 import { PeriodPicker } from "./admin-charts";
@@ -172,7 +173,6 @@ type CourierRow = {
   photo_path: string;
   id_type: string | null;
   id_number: string | null;
-  residence: string | null;
   status: string;
 };
 const vehicles: [string, string][] = [
@@ -201,7 +201,7 @@ export function CourierProfileCard({ userId, onSubmitted }: { userId: string; on
   useEffect(() => {
     let alive = true;
     Promise.all([
-      db.from("couriers").select("zone_id, vehicle_type, plate_number, photo_path, id_type, id_number, residence, status").eq("user_id", userId).maybeSingle(),
+      db.from("couriers").select("zone_id, vehicle_type, plate_number, photo_path, id_type, id_number, status").eq("user_id", userId).maybeSingle(),
       db.from("identity_formats").select("code, kind, label, pattern, example").eq("is_active", true).order("label"),
       db.from("zones").select("id, name").eq("is_active", true).order("name"),
     ]).then(([c, f, z]) => {
@@ -209,7 +209,7 @@ export function CourierProfileCard({ userId, onSubmitted }: { userId: string; on
       const zones = z.data ?? [];
       // Sans dossier : nouvelle candidature (photo obligatoire).
       const courier = (c.data as CourierRow | null) ?? {
-        zone_id: zones[0]?.id ?? "", vehicle_type: "motorbike", plate_number: null, photo_path: "", id_type: null, id_number: null, residence: null, status: "",
+        zone_id: zones[0]?.id ?? "", vehicle_type: "motorbike", plate_number: null, photo_path: "", id_type: null, id_number: null, status: "",
       };
       setVehicle(courier.vehicle_type);
       setIdType(courier.id_type ?? "cni");
@@ -252,7 +252,6 @@ export function CourierProfileCard({ userId, onSubmitted }: { userId: string; on
         p_photo_path: photoPath,
         p_id_type: needsPlate ? null : idType,
         p_id_number: needsPlate ? null : idNumber,
-        p_residence: String(form.get("residence")).trim(),
       });
       if (error) throw error;
       const status = (saved as CourierRow).status;
@@ -321,9 +320,13 @@ export function CourierProfileCard({ userId, onSubmitted }: { userId: string; on
             </Field>
           </>
         )}
-        <Field label="Adresse de résidence">
-          <input name="residence" required minLength={3} maxLength={160} defaultValue={courier.residence ?? ""} className={fieldClass} />
-        </Field>
+        <p className="text-sm text-muted sm:col-span-2">
+          Nom, téléphone et ville : ceux de votre compte,{" "}
+          <Link href="/espace/profil" className="font-semibold text-primary hover:underline">
+            à modifier dans Mon profil
+          </Link>
+          .
+        </p>
         <p className="text-xs text-muted sm:col-span-2">
           {courier.status
             ? "Changer de zone, de véhicule, de plaque ou de pièce repasse votre dossier en validation."
