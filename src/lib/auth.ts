@@ -31,7 +31,8 @@ export function safeNext(next: string | null): string {
   return next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/espace";
 }
 
-export type Roles = { is_admin: boolean; courier_status: string | null; restaurant_ids: string[] };
+/** `onboarded` : parcours choisi après l'inscription (client, établissement ou livreur). */
+export type Roles = { is_admin: boolean; courier_status: string | null; restaurant_ids: string[]; onboarded?: boolean };
 
 /** Rôles du compte connecté (fonction my_roles, comme le mobile). */
 export function useRoles(enabled: boolean): Roles | null | undefined {

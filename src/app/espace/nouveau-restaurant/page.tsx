@@ -105,6 +105,7 @@ export default function NewRestaurantPage() {
     });
     setBusy(false);
     if (error) return setError(errorMessage(error));
+    await db.rpc("complete_onboarding");
     setDone(true);
   }
 

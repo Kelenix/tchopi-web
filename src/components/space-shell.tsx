@@ -62,7 +62,16 @@ const adminAllowed = (path: string) => path.startsWith("/espace/admin") || path 
 const clientOnly = (path: string) => path.startsWith("/espace/commandes") || path === "/espace/panier";
 const home = (roles: Roles) =>
   roles.is_admin ? "/espace/admin" : roles.restaurant_ids.length ? "/espace/etablissement" : roles.courier_status ? "/espace/livreur" : null;
-const blocked = (roles: Roles, path: string) => (roles.is_admin ? !adminAllowed(path) : Boolean(home(roles)) && clientOnly(path));
+/** Pages ouvertes pendant l'onboarding : choix du parcours, inscription d'un établissement ou d'un livreur, profil. */
+const onboardingPaths = ["/espace/bienvenue", "/espace/nouveau-restaurant", "/espace/devenir-livreur", "/espace/profil"];
+const needsOnboarding = (roles: Roles) => roles.onboarded === false && !roles.is_admin && !home(roles);
+const blocked = (roles: Roles, path: string) =>
+  roles.is_admin
+    ? !adminAllowed(path)
+    : needsOnboarding(roles)
+      ? !onboardingPaths.includes(path)
+      : Boolean(home(roles)) && clientOnly(path);
+const target = (roles: Roles) => (needsOnboarding(roles) ? "/espace/bienvenue" : home(roles)!);
 
 function navFor(roles: Roles): { title: string; items: NavItem[] }[] {
   // Séparation stricte (ADR-048) : l'admin supervise tout depuis l'administration, sans les espaces des autres rôles.
@@ -107,7 +116,7 @@ export function SpaceShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (session === null) router.replace(`/connexion?suite=${encodeURIComponent(pathname)}`);
-    else if (roles && blocked(roles, pathname)) router.replace(home(roles)!);
+    else if (roles && blocked(roles, pathname)) router.replace(target(roles));
   }, [session, roles, router, pathname]);
 
   if (!session || !roles || blocked(roles, pathname)) {

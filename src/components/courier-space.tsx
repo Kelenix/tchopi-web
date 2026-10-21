@@ -188,7 +188,7 @@ const normalize = (v: string) => v.toUpperCase().replace(/[\s.\-/]/g, "");
  * Dossier livreur : zone, moyen de transport, immatriculation (véhicule) ou pièce d'identité (à pied, à vélo) vérifiées
  * automatiquement sur les formats ivoiriens, adresse, photo. Un changement sensible repasse le dossier en validation.
  */
-export function CourierProfileCard({ userId }: { userId: string }) {
+export function CourierProfileCard({ userId, onSubmitted }: { userId: string; onSubmitted?: () => void }) {
   const db = browserClient();
   const [data, setData] = useState<{ courier: CourierRow; formats: Format[]; zones: { id: string; name: string }[] } | null>(null);
   const [vehicle, setVehicle] = useState("motorbike");
@@ -201,15 +201,19 @@ export function CourierProfileCard({ userId }: { userId: string }) {
   useEffect(() => {
     let alive = true;
     Promise.all([
-      db.from("couriers").select("zone_id, vehicle_type, plate_number, photo_path, id_type, id_number, residence, status").eq("user_id", userId).single(),
+      db.from("couriers").select("zone_id, vehicle_type, plate_number, photo_path, id_type, id_number, residence, status").eq("user_id", userId).maybeSingle(),
       db.from("identity_formats").select("code, kind, label, pattern, example").eq("is_active", true).order("label"),
       db.from("zones").select("id, name").eq("is_active", true).order("name"),
     ]).then(([c, f, z]) => {
-      if (!alive || !c.data) return;
-      const courier = c.data as CourierRow;
+      if (!alive) return;
+      const zones = z.data ?? [];
+      // Sans dossier : nouvelle candidature (photo obligatoire).
+      const courier = (c.data as CourierRow | null) ?? {
+        zone_id: zones[0]?.id ?? "", vehicle_type: "motorbike", plate_number: null, photo_path: "", id_type: null, id_number: null, residence: null, status: "",
+      };
       setVehicle(courier.vehicle_type);
       setIdType(courier.id_type ?? "cni");
-      setData({ courier, formats: (f.data ?? []) as Format[], zones: z.data ?? [] });
+      setData({ courier, formats: (f.data ?? []) as Format[], zones });
     });
     return () => {
       alive = false;
@@ -231,6 +235,7 @@ export function CourierProfileCard({ userId }: { userId: string }) {
     // Vérification immédiate ; le serveur revérifie avec les mêmes formats.
     if (needsPlate && !matches("plate", plate)) return setMessage({ ok: false, text: "Immatriculation non reconnue : format ivoirien attendu (ex. 1234 AB 01)." });
     if (!needsPlate && !matches("id", idNumber, idType)) return setMessage({ ok: false, text: `Numéro non reconnu pour cette pièce (ex. ${idFormat?.example ?? ""}).` });
+    if (!photo && !courier.photo_path) return setMessage({ ok: false, text: "Ajoutez une photo de votre visage." });
     setBusy(true);
     setMessage(null);
     try {
@@ -254,6 +259,7 @@ export function CourierProfileCard({ userId }: { userId: string }) {
       setMessage({ ok: true, text: status === "pending" && courier.status === "approved" ? "Enregistré : modification envoyée à l'équipe Tchopi pour validation." : "Dossier enregistré." });
       setData({ ...data!, courier: saved as CourierRow });
       setPhoto(null);
+      onSubmitted?.();
     } catch (err) {
       setMessage({ ok: false, text: errorMessage(err) });
     }
@@ -318,7 +324,11 @@ export function CourierProfileCard({ userId }: { userId: string }) {
         <Field label="Adresse de résidence">
           <input name="residence" required minLength={3} maxLength={160} defaultValue={courier.residence ?? ""} className={fieldClass} />
         </Field>
-        <p className="text-xs text-muted sm:col-span-2">Changer de zone, de véhicule, de plaque ou de pièce repasse votre dossier en validation.</p>
+        <p className="text-xs text-muted sm:col-span-2">
+          {courier.status
+            ? "Changer de zone, de véhicule, de plaque ou de pièce repasse votre dossier en validation."
+            : "Votre dossier est vérifié par l'équipe Tchopi ; vous êtes prévenu de la décision."}
+        </p>
         {message && (
           <p role="status" className={`text-sm font-medium sm:col-span-2 ${message.ok ? "text-primary" : "text-danger"}`}>
             {message.text}
@@ -326,8 +336,9 @@ export function CourierProfileCard({ userId }: { userId: string }) {
         )}
         <div className="flex flex-wrap gap-2 sm:col-span-2">
           <Button type="submit" disabled={busy}>
-            {busy ? "Enregistrement…" : "Enregistrer le dossier"}
+            {busy ? "Enregistrement…" : courier.status ? "Enregistrer le dossier" : "Envoyer ma candidature"}
           </Button>
+          {courier.status && (
           <Button
             variant="outline"
             className="text-danger"
@@ -345,6 +356,7 @@ export function CourierProfileCard({ userId }: { userId: string }) {
           >
             Supprimer mon profil livreur
           </Button>
+          )}
         </div>
       </form>
     </Card>
