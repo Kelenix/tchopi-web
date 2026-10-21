@@ -45,7 +45,6 @@ async function Results({ searchParams }: { searchParams: Promise<{ ville?: strin
 
   return (
     <>
-
       {q.length >= 2 && !results.length && (
         <div className="mt-8">
           <EmptyState icon={SearchX} title={`Aucun résultat pour « ${q} »`} body={`Essayez un autre mot ou une autre ville que ${zone?.city ?? "celle-ci"}.`} />
