@@ -13,6 +13,7 @@ import { Hero } from "@/components/home/hero";
 import { RouteShowcase } from "@/components/home/route-showcase";
 import { Process } from "@/components/home/process";
 import { ButtonLink, SectionTitle } from "@/components/ui";
+import { slugify } from "@/lib/slug";
 import { getEstablishments, getFeaturedProducts, getZones, pickZone, type Zone } from "@/lib/catalog";
 
 // Navigation instantanée vérifiée en développement (catalogue public).
@@ -101,7 +102,7 @@ async function LiveBadge({ searchParams }: { searchParams: Promise<Search> }) {
 
 async function HeroCity({ searchParams }: { searchParams: Promise<Search> }) {
   const data = await selectedZone(searchParams).catch(() => null);
-  return data?.zone ? <GlassCity zones={data.zones} current={data.zone.id} /> : null;
+  return data?.zone ? <GlassCity zones={data.zones} current={data.zone.slug} /> : null;
 }
 
 async function loadCatalog(searchParams: Promise<Search>) {
@@ -121,8 +122,11 @@ async function Catalog({ searchParams }: { searchParams: Promise<Search> }) {
   if (data === "unavailable") return <Unavailable />;
   const { zone, params, establishments, featured } = data;
   const categories = [...new Set(establishments.map((e) => e.category).filter((c): c is string => Boolean(c)))].sort((a, b) => a.localeCompare(b, "fr"));
-  const shown = establishments.filter((e) => !params.categorie || e.category === params.categorie);
-  const href = (categorie?: string) => `/?${new URLSearchParams({ ville: zone.id, ...(categorie ? { categorie } : {}) })}#restaurants`;
+  // Catégorie par slug (`?categorie=ivoirien`) ; le nom exact des anciens liens reste reconnu.
+  const shown = establishments.filter(
+    (e) => !params.categorie || (e.category && (slugify(e.category) === params.categorie || e.category === params.categorie)),
+  );
+  const href = (categorie?: string) => `/?${new URLSearchParams({ ville: zone.slug, ...(categorie ? { categorie: slugify(categorie) } : {}) })}#restaurants`;
   const chip = (active: boolean) =>
     `shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${active ? "bg-ink text-on-ink" : "bg-surface text-muted ring-1 ring-border hover:text-ink"}`;
 

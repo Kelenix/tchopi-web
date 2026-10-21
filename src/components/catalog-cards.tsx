@@ -4,6 +4,7 @@ import { Clock, UtensilsCrossed } from "lucide-react";
 import type { Establishment, FeaturedProduct } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/env";
 import { formatMoney } from "@/lib/format";
+import { productAnchor } from "@/lib/slug";
 import { Badge } from "./ui";
 
 export function OpenBadge({ open }: { open: boolean }) {
@@ -24,7 +25,7 @@ function Cover({ path, alt }: { path: string | null; alt: string }) {
 /** Restaurant : la photo d'abord, puis le nom, la cuisine et le quartier. */
 export function EstablishmentCard({ e }: { e: Establishment }) {
   return (
-    <Link href={`/etablissements/${e.id}`} className="group block">
+    <Link href={`/etablissements/${e.slug}`} className="group block">
       <div className="relative aspect-[4/3] overflow-hidden rounded-[22px] bg-surface-alt">
         <Cover path={e.cover_path} alt={e.name} />
         <div className="absolute left-3 top-3">
@@ -49,7 +50,7 @@ export function ProductCard({ p }: { p: FeaturedProduct }) {
   const url = mediaUrl(p.photo_path);
   return (
     <Link
-      href={`/etablissements/${p.establishment_id}#produit-${p.id}`}
+      href={`/etablissements/${p.establishment_slug}#${productAnchor(p.name)}`}
       className="group flex gap-4 rounded-card border border-border bg-surface p-3 transition hover:shadow-float"
     >
       <div className="relative size-24 shrink-0 overflow-hidden rounded-field bg-surface-alt">

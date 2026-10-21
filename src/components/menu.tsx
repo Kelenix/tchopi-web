@@ -9,6 +9,7 @@ import type { EstablishmentDetail, Product } from "@/lib/catalog";
 import { cart, cartCount, cartSubtotal, useCart, type CartOption } from "@/lib/cart";
 import { mediaUrl } from "@/lib/env";
 import { formatMoney } from "@/lib/format";
+import { productAnchor, uniqueAnchors } from "@/lib/slug";
 import { Button } from "./ui";
 
 /** Produits d'un établissement par catégorie, choix des options et ajout au panier. */
@@ -22,7 +23,12 @@ export function Menu({ establishment }: { establishment: EstablishmentDetail }) 
     const others = establishment.products.filter(
       (p) => !p.category_id || !establishment.categories.some((c) => c.id === p.category_id),
     );
-    return others.length ? [...byCategory, { id: "autres", name: byCategory.length ? "Autres" : "Produits", products: others }] : byCategory;
+    const all = others.length ? [...byCategory, { id: "autres", name: byCategory.length ? "Autres" : "Produits", products: others }] : byCategory;
+    // Ancres lisibles (#boissons, #plat-garba) ; les anciennes (#cat-<uuid>, #produit-<uuid>) restent posées.
+    const anchors = uniqueAnchors(all.map((s) => s.name));
+    const products = uniqueAnchors(all.flatMap((s) => s.products.map((p) => productAnchor(p.name))));
+    let i = 0;
+    return all.map((s, k) => ({ ...s, anchor: anchors[k], products: s.products.map((p) => ({ ...p, anchor: products[i++] })) }));
   }, [establishment]);
 
   const count = current?.establishmentId === establishment.id ? cartCount(current) : 0;
@@ -32,7 +38,7 @@ export function Menu({ establishment }: { establishment: EstablishmentDetail }) 
       {sections.length > 1 && (
         <nav aria-label="Catégories du menu" className="glass-nav sticky top-[5rem] z-30 mb-8 flex w-fit max-w-full gap-1 overflow-x-auto rounded-full p-1.5">
           {sections.map((s) => (
-            <a key={s.id} href={`#cat-${s.id}`} className="shrink-0 rounded-full px-4 py-2 text-sm font-semibold text-muted transition hover:bg-surface hover:text-ink">
+            <a key={s.id} href={`#${s.anchor}`} className="shrink-0 rounded-full px-4 py-2 text-sm font-semibold text-muted transition hover:bg-surface hover:text-ink">
               {s.name}
             </a>
           ))}
@@ -40,11 +46,13 @@ export function Menu({ establishment }: { establishment: EstablishmentDetail }) 
       )}
       <div className="space-y-10">
         {sections.map((s) => (
-          <section key={s.id} id={`cat-${s.id}`} className="scroll-mt-32">
+          <section key={s.id} id={s.anchor} className="scroll-mt-32">
+            <span id={`cat-${s.id}`} className="block scroll-mt-32" aria-hidden />
             <h2 className="mb-5 font-display text-4xl">{s.name}</h2>
             <ul className="grid gap-4 md:grid-cols-2">
               {s.products.map((p) => (
-                <li key={p.id} id={`produit-${p.id}`} className="scroll-mt-32">
+                <li key={p.id} id={p.anchor} className="scroll-mt-32">
+                  <span id={`produit-${p.id}`} className="block scroll-mt-32" aria-hidden />
                   <ProductRow
                     product={p}
                     disabled={!establishment.is_open || !p.is_available}

@@ -20,7 +20,7 @@ export function CitySelect({ zones, current }: { zones: Zone[]; current: string 
         className="h-full w-full cursor-pointer appearance-none bg-transparent pr-6 text-sm font-semibold focus:outline-none"
       >
         {zones.map((z) => (
-          <option key={z.id} value={z.id}>
+          <option key={z.id} value={z.slug}>
             {z.name.startsWith(z.city) ? z.name : `${z.city} — ${z.name}`}
           </option>
         ))}

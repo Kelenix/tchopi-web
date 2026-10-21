@@ -7,9 +7,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const pages: MetadataRoute.Sitemap = [{ url: env.siteUrl, changeFrequency: "daily", priority: 1 }];
   try {
     for (const zone of await getZones()) {
-      pages.push({ url: `${env.siteUrl}/?ville=${zone.id}`, changeFrequency: "daily", priority: 0.8 });
+      pages.push({ url: `${env.siteUrl}/?ville=${zone.slug}`, changeFrequency: "daily", priority: 0.8 });
       for (const e of await getEstablishments(zone.id)) {
-        pages.push({ url: `${env.siteUrl}/etablissements/${e.id}`, changeFrequency: "daily", priority: 0.7 });
+        pages.push({ url: `${env.siteUrl}/etablissements/${e.slug}`, changeFrequency: "daily", priority: 0.7 });
       }
     }
   } catch {

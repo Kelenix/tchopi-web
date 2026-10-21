@@ -21,7 +21,7 @@ export function GlassCity({ zones, current }: { zones: Zone[]; current: string }
         className="w-full cursor-pointer appearance-none bg-transparent text-sm font-semibold text-white focus:outline-none [&>option]:text-black"
       >
         {zones.map((z) => (
-          <option key={z.id} value={z.id}>
+          <option key={z.id} value={z.slug}>
             {z.city}
           </option>
         ))}

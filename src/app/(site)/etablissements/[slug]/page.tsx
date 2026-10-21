@@ -16,14 +16,14 @@ export const instant = true;
 const days = ["", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 const hhmm = (t: string) => t.slice(0, 5).replace(":", " h ");
 
-export async function generateMetadata({ params }: PageProps<"/etablissements/[id]">): Promise<Metadata> {
-  const e = await getEstablishment((await params).id).catch(() => null);
+export async function generateMetadata({ params }: PageProps<"/etablissements/[slug]">): Promise<Metadata> {
+  const e = await getEstablishment((await params).slug).catch(() => null);
   return e
-    ? { title: `${e.name} à ${e.city}`, description: e.description ?? `Restaurant à ${e.city} : commandez en ligne avec Tchopi.` }
+    ? { title: `${e.name} à ${e.city}`, alternates: { canonical: `/etablissements/${e.slug}` }, description: e.description ?? `Restaurant à ${e.city} : commandez en ligne avec Tchopi.` }
     : { title: "Établissement" };
 }
 
-export default function EstablishmentPage({ params }: PageProps<"/etablissements/[id]">) {
+export default function EstablishmentPage({ params }: PageProps<"/etablissements/[slug]">) {
   return (
     <Suspense fallback={<div className="mx-auto mt-10 h-72 max-w-6xl animate-pulse rounded-card bg-surface-alt" />}>
       <Establishment params={params} />
@@ -31,10 +31,11 @@ export default function EstablishmentPage({ params }: PageProps<"/etablissements
   );
 }
 
-async function Establishment({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const e = await getEstablishment(id);
+// Anciennes adresses (UUID, ancien nom) : redirection permanente par le proxy avant d'arriver ici.
+async function Establishment({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  if (!/^[a-z0-9-]{1,80}$/.test(slug)) notFound();
+  const e = await getEstablishment(slug);
   if (!e) notFound();
   const cover = mediaUrl(e.cover_path);
 
@@ -55,7 +56,7 @@ async function Establishment({ params }: { params: Promise<{ id: string }> }) {
         }
       >
         <div className="flex flex-wrap items-stretch gap-3">
-          <Link href={`/?ville=${e.zone_id}#restaurants`} className="glass inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold">
+          <Link href={`/?ville=${e.zone_slug}#restaurants`} className="glass inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold">
             <ArrowLeft className="size-4" aria-hidden /> Restaurants de {e.city}
           </Link>
           <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm">

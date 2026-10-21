@@ -11,6 +11,7 @@ export type Zone = {
   center_lng: number;
   radius_m: number;
   currency: string;
+  slug: string;
 };
 
 export type EstablishmentKind = "restaurant" | "shop";
@@ -26,6 +27,7 @@ export type Establishment = {
   landmark: string;
   prep_time_min: number;
   is_open: boolean;
+  slug: string;
 };
 
 export type FeaturedProduct = {
@@ -37,6 +39,7 @@ export type FeaturedProduct = {
   price: number;
   photo_path: string | null;
   is_open: boolean;
+  establishment_slug: string;
 };
 
 export type ProductOption = { id: string; name: string; price_delta: number; is_available: boolean };
@@ -59,6 +62,7 @@ export type Product = {
 };
 export type EstablishmentDetail = Establishment & {
   zone_id: string;
+  zone_slug: string;
   city: string;
   currency: string;
   hours: { weekday: number; opens_at: string; closes_at: string }[];
@@ -75,6 +79,7 @@ export type SearchResult = {
   price: number | null;
   photo_path: string | null;
   is_open: boolean;
+  establishment_slug: string;
 };
 
 /** Zone par défaut (Abidjan), présente sur tous les serveurs (migration default_zone). */
@@ -104,10 +109,10 @@ export async function getFeaturedProducts(zoneId: string): Promise<FeaturedProdu
   return call<FeaturedProduct[]>("public_featured_products", { p_zone_id: zoneId, p_limit: 8 });
 }
 
-export async function getEstablishment(id: string): Promise<EstablishmentDetail | null> {
+export async function getEstablishment(slug: string): Promise<EstablishmentDetail | null> {
   "use cache";
   cacheLife("minutes");
-  return call<EstablishmentDetail | null>("public_establishment", { p_id: id });
+  return call<EstablishmentDetail | null>("public_establishment_by_slug", { p_slug: slug });
 }
 
 export async function searchCatalog(zoneId: string, query: string): Promise<SearchResult[]> {
@@ -116,10 +121,10 @@ export async function searchCatalog(zoneId: string, query: string): Promise<Sear
   return call<SearchResult[]>("public_search", { p_zone_id: zoneId, p_query: query });
 }
 
-/** Zone choisie (paramètre « ville ») si elle existe, sinon Abidjan, sinon la première zone active. */
+/** Zone choisie (paramètre « ville » : slug, ou UUID des anciens liens) si elle existe, sinon Abidjan, sinon la première zone active. */
 export function pickZone(zones: Zone[], requested: string | undefined): Zone | undefined {
   return (
-    zones.find((z) => z.id === requested) ?? zones.find((z) => z.id === DEFAULT_ZONE_ID) ?? zones[0]
+    zones.find((z) => z.slug === requested || z.id === requested) ?? zones.find((z) => z.id === DEFAULT_ZONE_ID) ?? zones[0]
   );
 }
 
