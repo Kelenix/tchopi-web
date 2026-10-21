@@ -65,8 +65,10 @@ const home = (roles: Roles) =>
 /** Pages ouvertes pendant l'onboarding : choix du parcours, inscription d'un établissement ou d'un livreur, profil. */
 const onboardingPaths = ["/espace/bienvenue", "/espace/nouveau-restaurant", "/espace/devenir-livreur", "/espace/profil"];
 const needsOnboarding = (roles: Roles) => roles.onboarded === false && !roles.is_admin && !home(roles);
-/** Profil incomplet : il se complète d'abord, une seule fois pour le web et le mobile (ADR-062). */
-const needsProfile = (roles: Roles) => roles.profile_complete === false;
+/** Profil incomplet d'un nouveau compte : il se complète d'abord, une seule fois pour le web et le mobile (ADR-062).
+ * Un compte déjà en activité (admin, établissement, livreur) n'est jamais bloqué : un rappel s'affiche. */
+const profileMissing = (roles: Roles) => roles.profile_complete === false;
+const needsProfile = (roles: Roles) => profileMissing(roles) && !roles.is_admin && !home(roles);
 const blocked = (roles: Roles, path: string) =>
   needsProfile(roles)
     ? path !== "/espace/profil"
@@ -208,7 +210,15 @@ export function SpaceShell({ children }: { children: ReactNode }) {
               <ThemeToggle />
             </div>
           </header>
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">{children}</main>
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+            {profileMissing(roles) && pathname !== "/espace/profil" && (
+              <Link href="/espace/profil" className="mb-6 flex items-center gap-3 rounded-card bg-warning-soft px-4 py-3 text-sm font-medium text-warning">
+                <UserRound className="size-4 shrink-0" aria-hidden />
+                Complétez votre profil (téléphone de contact, ville) : il sera repris sur l&apos;application mobile.
+              </Link>
+            )}
+            {children}
+          </main>
         </div>
       </div>
     </AccountContext.Provider>
