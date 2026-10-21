@@ -87,11 +87,12 @@ export function CourierDeliveries() {
           </button>
         ))}
       </div>
-      <section className="mt-4 grid gap-4 sm:grid-cols-3">
+      <section className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           ["Livraisons terminées", s ? String(s.delivered) : "…"],
           ["Gains", s ? formatMoney(s.earnings) : "…"],
           ["Distance parcourue", s ? km(s.distance_m) : "…"],
+          ["Offres refusées", s ? String(s.declined ?? 0) : "…"],
         ].map(([l, v]) => (
           <Card key={l} className="p-5">
             <p className="text-sm text-muted">{l}</p>
