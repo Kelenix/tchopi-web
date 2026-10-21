@@ -49,8 +49,9 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="grid gap-10 py-16 md:grid-cols-[1.4fr_repeat(3,1fr)]">
-          <div className="space-y-4">
+        {/* Liens sur deux colonnes dès le téléphone, quatre colonnes sur grand écran. */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 py-16 sm:grid-cols-3 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+          <div className="col-span-2 space-y-4 sm:col-span-3 md:col-span-1">
             <Logo height={72} />
             <p className="max-w-xs text-sm text-white/60">
               Les restaurants de votre ville, livrés chez vous en Côte d&apos;Ivoire. Espèces, Mobile Money ou carte.

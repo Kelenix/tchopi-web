@@ -36,12 +36,12 @@ const questions = [
   },
 ];
 
-/** Questions fréquentes : cartes en verre, une ouverte à la fois, ouverture animée. */
+/** Questions fréquentes : cartes en verre sur deux colonnes (grand écran), une ouverte à la fois, ouverture animée. */
 export function Faq() {
   const [open, setOpen] = useState<number | null>(0);
   const reduce = useReducedMotion();
   return (
-    <ul className="space-y-3">
+    <ul className="grid items-start gap-3 lg:grid-cols-2">
       {questions.map(({ q, a }, i) => {
         const isOpen = open === i;
         return (

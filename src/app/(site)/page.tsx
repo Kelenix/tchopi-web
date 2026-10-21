@@ -6,6 +6,7 @@ import { ArrowRight, ChartColumn, ClipboardList, MapPinned, Store, Wifi } from "
 import { EstablishmentCard } from "@/components/catalog-cards";
 import { EmptyState } from "@/components/empty-state";
 import { Faq } from "@/components/faq";
+import { AppDemo } from "@/components/home/app-demo";
 import { DishMarquee } from "@/components/home/dish-marquee";
 import { GlassCity } from "@/components/home/glass-city";
 import { Hero } from "@/components/home/hero";
@@ -51,6 +52,13 @@ export default function HomePage({ searchParams }: PageProps<"/">) {
         <RouteShowcase />
       </section>
 
+      <section className="mx-auto mt-28 max-w-6xl px-4 sm:px-6">
+        <SectionTitle title="Commander en 4 gestes" body="Voici l'app en action : du choix du restaurant jusqu'au livreur devant votre porte." />
+        <div className="mt-10">
+          <AppDemo />
+        </div>
+      </section>
+
       <section id="fonctionnement" className="mx-auto mt-28 max-w-6xl scroll-mt-24 px-4 sm:px-6">
         <SectionTitle title="De la cuisine à votre porte" body="Chaque étape s'affiche en direct dans votre suivi, sur le site comme sur l'application." />
         <Process />
@@ -58,9 +66,11 @@ export default function HomePage({ searchParams }: PageProps<"/">) {
 
       <Restaurateurs />
 
-      <section id="faq" className="mx-auto mt-28 grid max-w-6xl scroll-mt-24 gap-10 px-4 sm:px-6 lg:grid-cols-[1fr_1.6fr]">
+      <section id="faq" className="mx-auto mt-28 max-w-6xl scroll-mt-24 px-4 sm:px-6">
         <SectionTitle title="Questions fréquentes" body="Paiement, livraison, annulation : l'essentiel avant de commander." />
-        <Faq />
+        <div className="mt-10">
+          <Faq />
+        </div>
       </section>
     </>
   );
