@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bike, Phone } from "lucide-react";
+import { Bike, MapPin, Phone } from "lucide-react";
 import { dialog, orThrow } from "@/components/dialog";
 import { EmptyState } from "@/components/empty-state";
 import { Badge, Button, Card } from "@/components/ui";
@@ -121,7 +121,7 @@ export default function CouriersPage() {
                       {r.status === "approved" && <Badge tone={r.is_online ? "success" : "neutral"}>{r.is_online ? "En ligne" : "Hors ligne"}</Badge>}
                     </div>
                     <p className="text-sm text-muted">
-                      {vehicles[r.vehicle_type] ?? r.vehicle_type} · {r.zone_name} · {r.deliveries} livraison{r.deliveries > 1 ? "s" : ""} pour vous
+                      {vehicles[r.vehicle_type] ?? r.vehicle_type} · {r.deliveries} livraison{r.deliveries > 1 ? "s" : ""} pour vous
                     </p>
                     {r.phone && (
                       <a href={`tel:${r.phone}`} className="inline-flex items-center gap-1.5 text-sm text-primary">
@@ -160,7 +160,8 @@ type Available = {
   affiliation: string | null;
 };
 
-/** Annuaire : livreurs validés par Tchopi dans la ville du restaurant, à contacter ou à ajouter à ses livreurs. */
+/** Annuaire : tous les livreurs validés par Tchopi (ville affichée, ceux de la ville du restaurant d'abord), à contacter
+ * ou à ajouter à ses livreurs ; filtre par ville. */
 function FindCouriers({ establishmentId, onAdded }: { establishmentId: string; onAdded: () => void }) {
   const [rows, setRows] = useState<{ key: string; list: Available[] } | null>(null);
   const [version, setVersion] = useState(0);
@@ -174,7 +175,10 @@ function FindCouriers({ establishmentId, onAdded }: { establishmentId: string; o
       alive = false;
     };
   }, [establishmentId, key]);
-  const list = rows?.key === key ? rows.list : null;
+  const all = rows?.key === key ? rows.list : null;
+  const [city, setCity] = useState("");
+  const cities = [...new Set((all ?? []).map((r) => r.zone_name))];
+  const list = all?.filter((r) => !city || r.zone_name === city) ?? null;
   const name = (r: Available) => [r.first_name, r.last_name].filter(Boolean).join(" ") || "Livreur";
 
   async function add(r: Available) {
@@ -191,8 +195,18 @@ function FindCouriers({ establishmentId, onAdded }: { establishmentId: string; o
   }
 
   if (!list) return <div className="h-48 animate-pulse rounded-card bg-surface-alt" />;
-  if (!list.length) return <EmptyState icon={Bike} title="Aucun autre livreur validé dans votre ville" body="Les nouveaux livreurs validés par Tchopi apparaîtront ici." />;
+  if (!all?.length) return <EmptyState icon={Bike} title="Aucun livreur disponible" body="Les nouveaux livreurs validés par Tchopi apparaîtront ici." />;
   return (
+    <>
+    {cities.length > 1 && (
+      <div className="mb-4 flex flex-wrap gap-2">
+        {["", ...cities].map((c) => (
+          <button key={c || "all"} onClick={() => setCity(c)} className={`rounded-full px-4 py-2 text-sm font-semibold ${city === c ? "bg-ink text-on-ink" : "bg-surface text-muted ring-1 ring-border"}`}>
+            {c || "Toutes les villes"}
+          </button>
+        ))}
+      </div>
+    )}
     <ul className="grid gap-4 lg:grid-cols-2">
       {list.map((r) => (
         <li key={r.courier_id}>
@@ -203,6 +217,9 @@ function FindCouriers({ establishmentId, onAdded }: { establishmentId: string; o
             <div className="min-w-0 flex-1 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-bold">{name(r)}</p>
+                <span className="inline-flex items-center gap-1 rounded-chip bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary">
+                  <MapPin className="size-3" aria-hidden /> {r.zone_name}
+                </span>
                 <Badge tone={r.is_online ? "success" : "neutral"}>{r.is_online ? "En ligne" : "Hors ligne"}</Badge>
                 {r.affiliation === "pending" && <Badge tone="warning">A postulé chez vous</Badge>}
               </div>
@@ -224,5 +241,6 @@ function FindCouriers({ establishmentId, onAdded }: { establishmentId: string; o
         </li>
       ))}
     </ul>
+    </>
   );
 }
