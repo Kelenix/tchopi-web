@@ -73,6 +73,11 @@
 }
 
 @layer base {
+  /* Barre de défilement fine aux couleurs du thème (au lieu du gris système, voyant sur les bandeaux sombres). */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--muted) 55%, transparent) transparent;
+  }
   body {
     background: var(--background);
     color: var(--ink);
