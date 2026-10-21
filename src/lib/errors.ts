@@ -26,6 +26,8 @@ const messages: Record<string, string> = {
   mission_in_progress: "Terminez votre mission en cours d'abord.",
   cash_due: "Reversez d'abord les espèces encaissées.",
   courier_suspended: "Compte livreur suspendu : contactez l'équipe Tchopi.",
+  rating_closed: "Il n'est plus possible de noter cette livraison.",
+  already_rated: "Vous avez déjà noté cette livraison.",
   period_too_long: "Période trop longue pour ce niveau de détail.",
 };
 

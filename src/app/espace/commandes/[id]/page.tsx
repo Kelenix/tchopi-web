@@ -6,6 +6,7 @@ import { use, useEffect, useState } from "react";
 import { ArrowLeft, Bike, Check, KeyRound, Phone } from "lucide-react";
 import { CourierMap } from "@/components/courier-map";
 import { ItemLines, StatusBadge, Timeline, useOrderItems } from "@/components/order-parts";
+import { RateCourier } from "@/components/rate-courier";
 import { useAccount } from "@/components/space-shell";
 import { Button, Card } from "@/components/ui";
 import { env } from "@/lib/env";
@@ -120,6 +121,7 @@ export default function TrackingPage({ params }: PageProps<"/espace/commandes/[i
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_22rem]">
         <div className="space-y-6">
+          {o.status === "delivered" && o.courier_id && <RateCourier orderId={o.id} courierName={o.courier_info?.first_name ?? "votre livreur"} />}
           {o.status === "awaiting_payment" && (
             <Card className="border-warning bg-warning-soft p-5">
               <p className="font-bold text-warning">Paiement en attente</p>
