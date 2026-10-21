@@ -25,7 +25,7 @@ export default function SignUpPage() {
 function SignUp() {
   const router = useRouter();
   const owner = useSearchParams().get("profil") === "restaurant";
-  const after = owner ? "/espace/nouveau-restaurant" : "/espace/profil?bienvenue=1";
+  const after = owner ? "/espace/profil?bienvenue=1&suite=/espace/nouveau-restaurant" : "/espace/profil?bienvenue=1";
   const [id, setId] = useState<Identifier | null>(null);
   const [errors, setErrors] = useState<{ id?: string; password?: string; form?: string }>({});
   const [busy, setBusy] = useState(false);

@@ -25,12 +25,24 @@ export default function ProfilePage() {
 }
 
 function ProfileForm() {
-  const { session } = useAccount();
-  const welcome = useSearchParams().has("bienvenue");
+  const { session, roles } = useAccount();
+  const params = useSearchParams();
+  const welcome = params.has("bienvenue");
+  const next = params.get("suite")?.startsWith("/espace/") ? params.get("suite")! : "/espace";
   const [profile, setProfile] = useState<Profile | null>(null);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [cities, setCities] = useState<string[]>([]);
   const db = browserClient();
+
+  // Villes desservies, comme sur le mobile.
+  useEffect(() => {
+    db.from("zones")
+      .select("city")
+      .eq("is_active", true)
+      .order("city")
+      .then(({ data }) => setCities([...new Set((data ?? []).map((z) => z.city as string))]));
+  }, [db]);
 
   useEffect(() => {
     db.from("profiles")
@@ -45,9 +57,8 @@ function ProfileForm() {
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
-    const rawPhone = String(form.get("phone")).trim();
-    const phone = rawPhone ? normalizePhone(rawPhone) : null;
-    if (rawPhone && !phone) return setMessage({ ok: false, text: "Numéro de téléphone invalide." });
+    const phone = normalizePhone(String(form.get("phone")).trim());
+    if (!phone) return setMessage({ ok: false, text: "Numéro de téléphone invalide." });
     const clean = (k: string) => String(form.get(k)).trim() || null;
     setBusy(true);
     const { error } = await db
@@ -55,7 +66,10 @@ function ProfileForm() {
       .update({ first_name: clean("first_name"), last_name: clean("last_name"), phone, city: clean("city") })
       .eq("id", session.user.id);
     setBusy(false);
-    setMessage(error ? { ok: false, text: errorMessage(error) } : { ok: true, text: "Profil enregistré." });
+    if (error) return setMessage({ ok: false, text: errorMessage(error) });
+    // Profil complété pour la première fois : rechargement, les rôles relus ouvrent la suite du parcours.
+    if (roles.profile_complete === false) return window.location.replace(`${window.location.origin}${next}`);
+    setMessage({ ok: true, text: "Profil enregistré." });
   }
 
   return (
@@ -73,16 +87,23 @@ function ProfileForm() {
           <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">
             <Avatar userId={session.user.id} path={profile.avatar_path} onChange={(avatar_path) => setProfile({ ...profile, avatar_path })} />
             <Field label="Prénom">
-              <input name="first_name" defaultValue={profile.first_name ?? ""} maxLength={60} autoComplete="given-name" className={fieldClass} />
+              <input name="first_name" defaultValue={profile.first_name ?? ""} required maxLength={60} autoComplete="given-name" className={fieldClass} />
             </Field>
             <Field label="Nom">
-              <input name="last_name" defaultValue={profile.last_name ?? ""} maxLength={60} autoComplete="family-name" className={fieldClass} />
+              <input name="last_name" defaultValue={profile.last_name ?? ""} required maxLength={60} autoComplete="family-name" className={fieldClass} />
             </Field>
             <Field label="Téléphone de contact" hint="Indispensable pour être joint à la livraison.">
-              <input name="phone" type="tel" defaultValue={profile.phone ?? ""} autoComplete="tel" className={fieldClass} />
+              <input name="phone" type="tel" required defaultValue={profile.phone ?? ""} autoComplete="tel" className={fieldClass} />
             </Field>
             <Field label="Ville">
-              <input name="city" defaultValue={profile.city ?? ""} maxLength={60} className={fieldClass} />
+              <select name="city" required defaultValue={profile.city ?? ""} className={fieldClass}>
+                <option value="" disabled>
+                  Choisissez votre ville
+                </option>
+                {[...new Set([...cities, ...(profile.city ? [profile.city] : [])])].map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
             </Field>
             <p className="text-sm text-muted sm:col-span-2">
               Identifiant de connexion : <strong className="text-ink">{session.user.email || `+${session.user.phone}`}</strong>

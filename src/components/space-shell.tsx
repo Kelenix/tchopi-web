@@ -65,13 +65,18 @@ const home = (roles: Roles) =>
 /** Pages ouvertes pendant l'onboarding : choix du parcours, inscription d'un établissement ou d'un livreur, profil. */
 const onboardingPaths = ["/espace/bienvenue", "/espace/nouveau-restaurant", "/espace/devenir-livreur", "/espace/profil"];
 const needsOnboarding = (roles: Roles) => roles.onboarded === false && !roles.is_admin && !home(roles);
+/** Profil incomplet : il se complète d'abord, une seule fois pour le web et le mobile (ADR-062). */
+const needsProfile = (roles: Roles) => roles.profile_complete === false;
 const blocked = (roles: Roles, path: string) =>
-  roles.is_admin
+  needsProfile(roles)
+    ? path !== "/espace/profil"
+    : roles.is_admin
     ? !adminAllowed(path)
     : needsOnboarding(roles)
       ? !onboardingPaths.includes(path)
       : Boolean(home(roles)) && clientOnly(path);
-const target = (roles: Roles) => (needsOnboarding(roles) ? "/espace/bienvenue" : home(roles)!);
+const target = (roles: Roles) =>
+  needsProfile(roles) ? "/espace/profil?bienvenue=1" : needsOnboarding(roles) ? "/espace/bienvenue" : home(roles)!;
 
 function navFor(roles: Roles): { title: string; items: NavItem[] }[] {
   // Séparation stricte (ADR-048) : l'admin supervise tout depuis l'administration, sans les espaces des autres rôles.
