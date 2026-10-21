@@ -7,6 +7,9 @@ export type PlatformSettings = {
   dispatch_alert_s: number;
   dispatch_cancel_s: number;
   support_phone: string | null;
+  auth_banner_title: string | null;
+  auth_banner_body: string | null;
+  whatsapp_otp_enabled: boolean;
 };
 
 export type OrderAlert = "no_courier" | "restaurant_silent" | "code_locked" | "problem";

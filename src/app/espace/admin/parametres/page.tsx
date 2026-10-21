@@ -70,6 +70,9 @@ function SettingsCard() {
       dispatch_alert_s: minutes("alert"),
       dispatch_cancel_s: minutes("cancel"),
       support_phone: phone,
+      auth_banner_title: String(form.get("banner_title")).trim() || null,
+      auth_banner_body: String(form.get("banner_body")).trim() || null,
+      whatsapp_otp_enabled: form.get("whatsapp") === "on",
     };
     if (values.dispatch_cancel_s <= values.dispatch_alert_s) return setMessage({ ok: false, text: "L'annulation doit venir après l'alerte." });
     const { error } = await db.from("settings").update(values).eq("id", true);
@@ -94,6 +97,19 @@ function SettingsCard() {
         <Field label="Téléphone du support">
           <input name="support" type="tel" defaultValue={settings.support_phone ?? ""} className={fieldClass} />
         </Field>
+        <fieldset className="grid gap-4 rounded-field border border-border p-4 sm:col-span-2 lg:col-span-3 sm:grid-cols-2">
+          <legend className="px-1 text-sm font-bold">Écran de connexion de l&apos;app mobile</legend>
+          <Field label="Bannière : titre" hint="Vide : pas de bannière.">
+            <input name="banner_title" minLength={3} maxLength={60} defaultValue={settings.auth_banner_title ?? ""} placeholder="Livraison offerte sur la 1re commande" className={fieldClass} />
+          </Field>
+          <Field label="Bannière : texte">
+            <input name="banner_body" minLength={3} maxLength={120} defaultValue={settings.auth_banner_body ?? ""} placeholder="Pour les nouveaux clients uniquement." className={fieldClass} />
+          </Field>
+          <label className="flex items-center gap-3 text-sm font-semibold sm:col-span-2">
+            <input type="checkbox" name="whatsapp" defaultChecked={settings.whatsapp_otp_enabled} className="size-4 accent-[var(--primary)]" />
+            Proposer le code par WhatsApp (seulement si l&apos;envoi WhatsApp est configuré chez le fournisseur SMS)
+          </label>
+        </fieldset>
         <div className="flex items-end">
           <Button type="submit">Enregistrer</Button>
         </div>
