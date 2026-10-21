@@ -15,7 +15,11 @@ export function GoogleButton({ next, label = "Continuer avec Google" }: { next: 
           setError(null);
           const { error } = await browserClient().auth.signInWithOAuth({
             provider: "google",
-            options: { redirectTo: `${window.location.origin}/auth/retour?suite=${encodeURIComponent(next)}` },
+            // Choix du compte Google à chaque fois (sinon le dernier compte utilisé est repris sans rien demander).
+            options: {
+              redirectTo: `${window.location.origin}/auth/retour?suite=${encodeURIComponent(next)}`,
+              queryParams: { prompt: "select_account" },
+            },
           });
           if (error) setError(/provider is not enabled|Unsupported provider/i.test(error.message) ? "La connexion avec Google n'est pas encore ouverte." : errorMessage(error));
         }}
