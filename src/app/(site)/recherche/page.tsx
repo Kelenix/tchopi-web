@@ -2,11 +2,11 @@ import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Search, SearchX } from "lucide-react";
-import { OpenBadge } from "@/components/catalog-cards";
+import { Search, SearchX, Store } from "lucide-react";
+import { EstablishmentCard, OpenBadge, ProductCard } from "@/components/catalog-cards";
 import { PageHero } from "@/components/page-hero";
 import { EmptyState } from "@/components/empty-state";
-import { getZones, pickZone, searchCatalog } from "@/lib/catalog";
+import { getEstablishments, getFeaturedProducts, getZones, pickZone, searchCatalog } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/env";
 import { formatMoney } from "@/lib/format";
 import { productAnchor } from "@/lib/slug";
@@ -42,6 +42,36 @@ async function Results({ searchParams }: { searchParams: Promise<{ ville?: strin
   const results = zone && q.length >= 2 ? await searchCatalog(zone.id, q) : [];
   const establishments = results.filter((r) => r.result_type === "establishment");
   const products = results.filter((r) => r.result_type === "product");
+
+  // Sans recherche : la ville se présente d'elle-même (plats en vedette, puis tous ses restaurants).
+  if (zone && q.length < 2) {
+    const [all, featured] = await Promise.all([getEstablishments(zone.id), getFeaturedProducts(zone.id)]);
+    if (!all.length) {
+      return <EmptyState icon={Store} title={`Pas encore de restaurant à ${zone.city}`} body="Choisissez une autre ville ou revenez bientôt." />;
+    }
+    return (
+      <>
+        {featured.length > 0 && (
+          <section>
+            <h2 className="text-lg font-bold">Plats à découvrir à {zone.city}</h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {featured.map((p) => (
+                <ProductCard key={p.id} p={p} />
+              ))}
+            </div>
+          </section>
+        )}
+        <section className={featured.length ? "mt-10" : ""}>
+          <h2 className="text-lg font-bold">Restaurants à {zone.city}</h2>
+          <div className="mt-4 grid gap-6 sm:grid-cols-2">
+            {all.map((e) => (
+              <EstablishmentCard key={e.id} e={e} />
+            ))}
+          </div>
+        </section>
+      </>
+    );
+  }
 
   return (
     <>
