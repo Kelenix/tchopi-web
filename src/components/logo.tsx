@@ -1,10 +1,12 @@
+import Image from "next/image";
 import Link from "next/link";
+import logo from "../../public/brand/logo.png";
 
-export function Logo({ className = "" }: { className?: string }) {
+/** Logo officiel Tchopi (livreur à moto et nom), lien vers l'accueil. Lisible sur fond clair comme sombre (contour noir). */
+export function Logo({ className = "", height = 40 }: { className?: string; height?: number }) {
   return (
-    <Link href="/" className={`inline-flex items-center gap-2 font-extrabold tracking-tight ${className}`}>
-      <span className="grid size-9 place-items-center rounded-xl bg-primary text-lg text-on-primary">t</span>
-      <span className="text-xl">tchopi</span>
+    <Link href="/" aria-label="Tchopi, accueil" className={`inline-flex shrink-0 items-center ${className}`}>
+      <Image src={logo} alt="Tchopi" priority style={{ height, width: "auto" }} sizes={`${Math.round(height * 1.5) * 2}px`} />
     </Link>
   );
 }

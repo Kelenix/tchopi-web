@@ -51,9 +51,7 @@ export function SiteFooter() {
 
         <div className="grid gap-10 py-16 md:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div className="space-y-4">
-            <span className="glass inline-flex rounded-full py-1.5 pl-2 pr-4">
-              <Logo />
-            </span>
+            <Logo height={72} />
             <p className="max-w-xs text-sm text-white/60">
               Les restaurants de votre ville, livrés chez vous en Côte d&apos;Ivoire. Espèces, Mobile Money ou carte.
             </p>
