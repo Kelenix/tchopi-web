@@ -73,10 +73,12 @@
 }
 
 @layer base {
-  /* Barre de défilement fine aux couleurs du thème (au lieu du gris système, voyant sur les bandeaux sombres). */
+  /* Barre de défilement de la page masquée (le défilement reste possible : molette, doigt, clavier). */
   html {
-    scrollbar-width: thin;
-    scrollbar-color: color-mix(in srgb, var(--muted) 55%, transparent) transparent;
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
   }
   body {
     background: var(--background);

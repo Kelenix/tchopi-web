@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useMotionValue, useReducedMotion, useScroll, u
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowDown, Bike, Check, ChefHat, ClipboardCheck, Flame, Search } from "lucide-react";
 import { Embers } from "./embers";
+import logo from "../../../public/brand/logo.png";
 
 const words = ["Le", "goût", "d'Abidjan,"];
 const accent = ["livré", "brûlant."];
@@ -72,6 +73,15 @@ export function Hero({ badge, city }: { badge: ReactNode; city: ReactNode }) {
       <Embers />
 
       <motion.div style={{ y: textY, opacity: fade }} className="relative mx-auto w-full max-w-6xl px-4 pb-16 pt-32 sm:px-6 lg:pb-24">
+        {/* Logo officiel en grand sur la photo : il arrive en roulant depuis la gauche. */}
+        <motion.div
+          initial={reduce ? false : { opacity: 0, x: -80 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.9, ease }}
+          className="mb-6"
+        >
+          <Image src={logo} alt="Tchopi" priority className="h-auto w-56 drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:w-72 lg:w-80" />
+        </motion.div>
         <motion.div initial={reduce ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease }} className="min-h-8">
           {badge}
         </motion.div>

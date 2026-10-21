@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Logo } from "./logo";
+import { HeaderLogo } from "./header-logo";
 import { ThemeToggle } from "./theme-toggle";
 import { AccountButton } from "./account-button";
 
@@ -15,7 +15,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 px-3 pt-3">
       {/* Pilule en verre dépoli, posée au-dessus du contenu (sur l'accueil, au-dessus de la photo). */}
       <div className="glass-nav mx-auto flex h-16 max-w-6xl items-center gap-4 rounded-full pl-4 pr-2">
-        <Logo height={52} />
+        <HeaderLogo />
         <nav aria-label="Navigation principale" className="hidden flex-1 items-center justify-center gap-1 md:flex">
           {links.map((l) => (
             <Link
