@@ -11,6 +11,9 @@ import { mediaUrl } from "@/lib/env";
 import { formatMoney } from "@/lib/format";
 import { fieldClass } from "@/components/ui";
 
+// Navigation instantanée vérifiée en développement (catalogue public).
+export const instant = true;
+
 export const metadata: Metadata = { title: "Recherche" };
 
 export default function SearchPage({ searchParams }: PageProps<"/recherche">) {

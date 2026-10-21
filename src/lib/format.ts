@@ -1,9 +1,9 @@
 const grouping = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 
-/** « 1 500 F » : montant en francs CFA, comme l'app mobile (espaces insécables normalisés). */
+/** « 1 500 FCFA » : montant en francs CFA, comme l'app mobile (espaces insécables normalisés). */
 export function formatMoney(amount: number, currency = "XOF"): string {
   const value = grouping.format(amount).replace(/[  ]/g, " ");
-  return currency === "XOF" ? `${value} F` : `${value} ${currency}`;
+  return currency === "XOF" ? `${value} FCFA` : `${value} ${currency}`;
 }
 
 export function formatTime(iso: string): string {

@@ -233,11 +233,11 @@ function ZoneEditor({ zone, rules, onClose, onSaved }: { zone: Zone | null; rule
         </div>
         {(["food"] as const).map((service) => (
           <fieldset key={service} className="rounded-field border border-border p-4">
-            <legend className="px-1 text-sm font-bold">Tarifs de livraison (F)</legend>
+            <legend className="px-1 text-sm font-bold">Tarifs de livraison (FCFA)</legend>
             <p className="mb-3 text-xs text-muted">
               Frais = base + distance par la route (km) × prix au km, arrondis, entre le minimum et le maximum. La distance vient du
-              serveur d&apos;itinéraires ; s&apos;il ne répond pas, vol d&apos;oiseau × détour. Exemple avec 500 + 100/km : 1 km = 600 F, 5 km =
-              1 000 F, 10 km = 1 500 F.
+              serveur d&apos;itinéraires ; s&apos;il ne répond pas, vol d&apos;oiseau × détour. Exemple avec 500 + 100/km : 1 km = 600 FCFA, 5 km =
+              1 000 FCFA, 10 km = 1 500 FCFA.
             </p>
             <div className="grid gap-3 sm:grid-cols-3">
               {ruleFields.map(([k, label]) => (

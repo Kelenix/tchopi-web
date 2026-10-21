@@ -171,7 +171,7 @@ export function ProductEditor({
             <input name="name" required minLength={2} maxLength={80} defaultValue={product?.name} autoFocus className={fieldClass} />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Prix (F)">
+            <Field label="Prix (FCFA)">
               <input name="price" required inputMode="numeric" defaultValue={product?.price} className={`${fieldClass} tabular`} />
             </Field>
             <Field label="Catégorie">
@@ -255,7 +255,7 @@ export function ProductEditor({
                         value={o.price_delta || ""}
                         onChange={(e) => updateOption(g.id, o.id, { price_delta: Number(e.target.value.replace(/\D/g, "")) || 0 })}
                         inputMode="numeric"
-                        placeholder="+ 0 F"
+                        placeholder="+ 0 FCFA"
                         aria-label="Prix ajouté"
                         className={`${fieldClass} tabular h-10 w-28`}
                       />

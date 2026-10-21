@@ -41,8 +41,8 @@ describe("connexion", () => {
 
 describe("affichage", () => {
   it("formate les francs CFA comme le mobile", () => {
-    expect(formatMoney(1500)).toBe("1 500 F");
-    expect(formatMoney(0)).toBe("0 F");
+    expect(formatMoney(1500)).toBe("1 500 FCFA");
+    expect(formatMoney(0)).toBe("0 FCFA");
   });
   it("rend les motifs serveur lisibles", () => {
     expect(closeReasonLabel("no_response")).toBe("Sans réponse du restaurant");

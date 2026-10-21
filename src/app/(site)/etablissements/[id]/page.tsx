@@ -10,6 +10,9 @@ import { PageHero } from "@/components/page-hero";
 import { getEstablishment } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/env";
 
+// Navigation instantanée vérifiée en développement (catalogue public).
+export const instant = true;
+
 const days = ["", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 const hhmm = (t: string) => t.slice(0, 5).replace(":", " h ");
 

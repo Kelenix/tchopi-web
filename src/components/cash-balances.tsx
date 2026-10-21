@@ -39,7 +39,7 @@ function CashTable({ balances, onRecorded }: { balances: Balance[]; onRecorded: 
       body: `Dû actuellement : ${formatMoney(b.due)}.`,
       confirmLabel: "Enregistrer",
       fields: [
-        { name: "amount", label: "Montant versé (F)", type: "number", defaultValue: String(b.due), min: 1, max: b.due, required: true },
+        { name: "amount", label: "Montant versé (FCFA)", type: "number", defaultValue: String(b.due), min: 1, max: b.due, required: true },
         { name: "reference", label: "Référence (facultatif)", placeholder: "Reçu, transaction Mobile Money…" },
       ],
       action: (v) =>

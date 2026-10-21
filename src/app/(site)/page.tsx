@@ -14,6 +14,9 @@ import { Process } from "@/components/home/process";
 import { ButtonLink, SectionTitle } from "@/components/ui";
 import { getEstablishments, getFeaturedProducts, getZones, pickZone, type Zone } from "@/lib/catalog";
 
+// Navigation instantanée vérifiée en développement (catalogue public).
+export const instant = true;
+
 type Search = { ville?: string; categorie?: string };
 
 export default function HomePage({ searchParams }: PageProps<"/">) {

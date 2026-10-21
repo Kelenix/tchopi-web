@@ -79,17 +79,20 @@ export function MapPicker({ initial, onChange }: { initial: Point; onChange: (p:
 
   return (
     <div className="space-y-2">
-      <form
-        className="relative"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          if (query.trim().length < 2) return;
-          const c = map.current?.getCenter();
-          setPlaces(await searchPlaces(query.trim(), c ? { lat: c.lat, lng: c.lng } : initial));
-        }}
-      >
+      {/* Pas de <form> : le sélecteur est souvent placé dans un formulaire (adresse, établissement). */}
+      <div className="relative" role="search">
         <Search className="absolute left-4 top-3.5 size-4 text-muted" aria-hidden />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Chercher un quartier, un carrefour, un commerce…" aria-label="Chercher un lieu" className={`${fieldClass} pl-10`} />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={async (e) => {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            if (query.trim().length < 2) return;
+            const c = map.current?.getCenter();
+            setPlaces(await searchPlaces(query.trim(), c ? { lat: c.lat, lng: c.lng } : initial));
+          }}
+          placeholder="Chercher un quartier, un carrefour, un commerce…" aria-label="Chercher un lieu" className={`${fieldClass} pl-10`} />
         {places && (
           <ul className="absolute inset-x-0 top-12 z-20 max-h-64 overflow-y-auto rounded-field border border-border bg-surface shadow-float">
             {places.length === 0 && <li className="px-4 py-3 text-sm text-muted">Aucun lieu trouvé : déplacez la carte jusqu&apos;au point voulu.</li>}
@@ -103,7 +106,7 @@ export function MapPicker({ initial, onChange }: { initial: Point; onChange: (p:
             ))}
           </ul>
         )}
-      </form>
+      </div>
       <div className="relative h-72 overflow-hidden rounded-card border border-border sm:h-80">
         <div ref={container} className="size-full" />
         <MapPin className="pointer-events-none absolute left-1/2 top-1/2 size-10 -translate-x-1/2 -translate-y-full fill-primary text-on-primary drop-shadow" aria-hidden />
