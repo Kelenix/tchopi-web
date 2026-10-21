@@ -34,6 +34,7 @@ const tabs: [string, string, AffiliationStatus[]][] = [
   ["active", "Mes livreurs", ["approved", "suspended"]],
   ["pending", "Candidatures", ["pending"]],
   ["past", "Historique", ["rejected", "ended"]],
+  ["find", "Trouver des livreurs", []],
 ];
 // Actions permises par la base (restaurant_set_affiliation) selon le statut.
 const actions: Record<AffiliationStatus, [AffiliationStatus, string, boolean][]> = {
@@ -89,7 +90,7 @@ export default function CouriersPage() {
       </p>
       <div role="tablist" className="mt-6 flex w-fit gap-1 overflow-x-auto rounded-full bg-surface-alt p-1">
         {tabs.map(([k, label, st]) => {
-          const n = (list ?? []).filter((r) => st.includes(r.status)).length;
+          const n = st.length ? (list ?? []).filter((r) => st.includes(r.status)).length : 0;
           return (
             <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`h-10 shrink-0 rounded-full px-4 text-sm font-semibold ${tab === k ? "bg-surface shadow-float" : "text-muted"}`}>
               {label}
@@ -99,7 +100,9 @@ export default function CouriersPage() {
         })}
       </div>
       <div className="mt-6">
-        {!list ? (
+        {tab === "find" ? (
+          <FindCouriers establishmentId={id} onAdded={() => setVersion((v) => v + 1)} />
+        ) : !list ? (
           <div className="h-48 animate-pulse rounded-card bg-surface-alt" />
         ) : shown.length === 0 ? (
           <EmptyState icon={Bike} title={tab === "pending" ? "Aucune candidature" : tab === "active" ? "Aucun livreur affilié" : "Aucun historique"} />
@@ -142,5 +145,84 @@ export default function CouriersPage() {
         )}
       </div>
     </>
+  );
+}
+
+type Available = {
+  courier_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  vehicle_type: string;
+  zone_name: string;
+  is_online: boolean;
+  deliveries: number;
+  affiliation: string | null;
+};
+
+/** Annuaire : livreurs validés par Tchopi dans la ville du restaurant, à contacter ou à ajouter à ses livreurs. */
+function FindCouriers({ establishmentId, onAdded }: { establishmentId: string; onAdded: () => void }) {
+  const [rows, setRows] = useState<{ key: string; list: Available[] } | null>(null);
+  const [version, setVersion] = useState(0);
+  const key = `${establishmentId}-${version}`;
+  useEffect(() => {
+    let alive = true;
+    browserClient()
+      .rpc("restaurant_available_couriers", { p_restaurant_id: establishmentId })
+      .then(({ data }) => alive && setRows({ key, list: (data ?? []) as Available[] }));
+    return () => {
+      alive = false;
+    };
+  }, [establishmentId, key]);
+  const list = rows?.key === key ? rows.list : null;
+  const name = (r: Available) => [r.first_name, r.last_name].filter(Boolean).join(" ") || "Livreur";
+
+  async function add(r: Available) {
+    const done = await dialog.confirm({
+      title: `Ajouter ${name(r)} à vos livreurs ?`,
+      body: "Il recevra vos commandes prêtes et il est prévenu. Vous pourrez suspendre ou mettre fin à l'affiliation à tout moment.",
+      confirmLabel: "Ajouter",
+      action: () => orThrow(browserClient().rpc("restaurant_add_courier", { p_restaurant_id: establishmentId, p_courier_id: r.courier_id })),
+    });
+    if (done) {
+      setVersion((v) => v + 1);
+      onAdded();
+    }
+  }
+
+  if (!list) return <div className="h-48 animate-pulse rounded-card bg-surface-alt" />;
+  if (!list.length) return <EmptyState icon={Bike} title="Aucun autre livreur validé dans votre ville" body="Les nouveaux livreurs validés par Tchopi apparaîtront ici." />;
+  return (
+    <ul className="grid gap-4 lg:grid-cols-2">
+      {list.map((r) => (
+        <li key={r.courier_id}>
+          <Card className="flex gap-4 p-5">
+            <span className="grid size-14 shrink-0 place-items-center rounded-full bg-primary-soft text-lg font-extrabold text-primary" aria-hidden>
+              {name(r).slice(0, 1).toUpperCase()}
+            </span>
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-bold">{name(r)}</p>
+                <Badge tone={r.is_online ? "success" : "neutral"}>{r.is_online ? "En ligne" : "Hors ligne"}</Badge>
+                {r.affiliation === "pending" && <Badge tone="warning">A postulé chez vous</Badge>}
+              </div>
+              <p className="text-sm text-muted">
+                {vehicles[r.vehicle_type] ?? r.vehicle_type} · {r.zone_name} · {r.deliveries} livraison{r.deliveries > 1 ? "s" : ""} sur Tchopi
+              </p>
+              <div className="flex flex-wrap gap-2 pt-2">
+                {r.phone && (
+                  <a href={`tel:${r.phone}`} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-semibold hover:bg-surface-alt">
+                    <Phone className="size-3.5" aria-hidden /> {r.phone}
+                  </a>
+                )}
+                <Button className="h-9 px-3 text-xs" onClick={() => add(r)}>
+                  Ajouter à mes livreurs
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </li>
+      ))}
+    </ul>
   );
 }
