@@ -274,11 +274,6 @@ export default function CheckoutPage() {
                   )}
                 </div>
               )}
-              {q.value.couriers_available === false && (
-                <p className="rounded-field bg-surface-alt p-3 text-xs text-muted">
-                  Aucun livreur en ligne pour l&apos;instant : vous pouvez commander, un livreur prendra votre commande dès qu&apos;il sera disponible.
-                </p>
-              )}
             </>
           )}
           {phone === null && (
