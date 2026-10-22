@@ -25,6 +25,7 @@ export default function MyOrdersPage() {
       .from("orders")
       .select("*")
       .eq("customer_id", session.user.id)
+      .is("customer_hidden_at", null)
       .not("status", "in", closed)
       .order("created_at", { ascending: false })
       .then(({ data }) => alive && setActive((data ?? []) as Order[]));
@@ -39,6 +40,7 @@ export default function MyOrdersPage() {
       .from("orders")
       .select("*", { count: "exact" })
       .eq("customer_id", session.user.id)
+      .is("customer_hidden_at", null)
       .in("status", closedStatuses)
       .order("created_at", { ascending: false })
       .range(page * PAGE, page * PAGE + PAGE - 1)
