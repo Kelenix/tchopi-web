@@ -1,4 +1,6 @@
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { Embers } from "@/components/home/embers";
 import logo from "../../../public/brand/logo.png";
 import { Logo } from "@/components/logo";
@@ -14,7 +16,9 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
         <Embers count={45} />
         {/* Logo officiel en grand sur la photo (grands écrans) ; sur mobile, il est en haut du formulaire. */}
         <div className="absolute inset-x-0 top-[14%] hidden justify-center px-12 lg:flex">
-          <Image src={logo} alt="Tchopi" priority className="h-auto w-full max-w-[380px] drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]" />
+          <Link href="/" aria-label="Accueil du site" className="w-full max-w-[380px]">
+            <Image src={logo} alt="Tchopi" priority className="h-auto w-full drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]" />
+          </Link>
         </div>
         <div className="absolute inset-x-0 bottom-0 hidden p-12 text-white lg:block">
           <p className="max-w-md font-display text-5xl leading-[1.02]">
@@ -25,8 +29,14 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
       </div>
       <div className="relative flex flex-1 flex-col">
         <header className="flex h-20 items-center justify-between px-5 sm:px-8">
-          <span className="lg:invisible">
-            <Logo height={56} />
+          <span className="flex items-center gap-3">
+            <span className="lg:hidden">
+              <Logo height={56} />
+            </span>
+            {/* Retour à l'accueil du site, toujours visible. */}
+            <Link href="/" className="glass-nav inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold">
+              <ArrowLeft className="size-4" aria-hidden /> Retour au site
+            </Link>
           </span>
           <span className="glass-nav rounded-full">
             <ThemeToggle />
