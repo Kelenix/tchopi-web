@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowLeft, Clock, MapPin, PackageOpen } from "lucide-react";
+import { ArrowLeft, CalendarClock, ChevronDown, Clock, MapPin, PackageOpen } from "lucide-react";
 import { OpenBadge } from "@/components/catalog-cards";
 import { EmptyState } from "@/components/empty-state";
 import { Menu } from "@/components/menu";
@@ -55,7 +55,7 @@ async function Establishment({ params }: { params: Promise<{ slug: string }> }) 
           </span>
         }
       >
-        <div className="flex flex-wrap items-stretch gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Link href={`/?ville=${e.zone_slug}#restaurants`} className="glass inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold">
             <ArrowLeft className="size-4" aria-hidden /> Restaurants de {e.city}
           </Link>
@@ -63,9 +63,13 @@ async function Establishment({ params }: { params: Promise<{ slug: string }> }) 
             <Clock className="size-4" aria-hidden /> Prêt en {e.prep_time_min} min environ
           </span>
           {e.hours.length > 0 && (
-            <details className="glass rounded-3xl px-4 py-2.5 text-sm">
-              <summary className="cursor-pointer font-semibold">Horaires</summary>
-              <ul className="mt-2 min-w-56 space-y-1 text-white/75">
+            <details className="group relative text-sm">
+              <summary className="glass inline-flex cursor-pointer list-none items-center gap-2 rounded-full px-4 py-2.5 font-semibold [&::-webkit-details-marker]:hidden">
+                <CalendarClock className="size-4" aria-hidden /> Horaires
+                <ChevronDown className="size-4 transition rotate-180 group-open:rotate-0" aria-hidden />
+              </summary>
+              {/* Volet flottant : il ne pousse ni n'étire les autres pastilles. */}
+              <ul className="absolute bottom-full left-0 z-20 mb-2 min-w-64 space-y-1 rounded-2xl bg-[#14100c]/95 p-4 text-white/80 shadow-float backdrop-blur">
                 {e.hours.map((h) => (
                   <li key={`${h.weekday}-${h.opens_at}`} className="flex justify-between gap-4">
                     <span>{days[h.weekday]}</span>
