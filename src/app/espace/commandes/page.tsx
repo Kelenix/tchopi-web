@@ -4,16 +4,20 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ChevronRight, ShoppingBag } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
+import { PAGE, Pager } from "@/components/pager";
 import { StatusBadge } from "@/components/order-parts";
 import { useAccount } from "@/components/space-shell";
 import { ButtonLink } from "@/components/ui";
 import { formatDateTime, formatMoney } from "@/lib/format";
-import { isClosed, type Order } from "@/lib/orders";
+import { closedStatuses, type Order } from "@/lib/orders";
 import { browserClient } from "@/lib/supabase";
 
 export default function MyOrdersPage() {
   const { session } = useAccount();
-  const [orders, setOrders] = useState<Order[] | null>(null);
+  const [active, setActive] = useState<Order[] | null>(null);
+  const [page, setPage] = useState(0);
+  const [past, setPast] = useState<{ page: number; rows: Order[]; total: number } | null>(null);
+  const closed = `(${closedStatuses.join(",")})`;
 
   useEffect(() => {
     let alive = true;
@@ -21,30 +25,45 @@ export default function MyOrdersPage() {
       .from("orders")
       .select("*")
       .eq("customer_id", session.user.id)
+      .not("status", "in", closed)
       .order("created_at", { ascending: false })
-      .limit(100)
-      .then(({ data }) => alive && setOrders((data ?? []) as Order[]));
+      .then(({ data }) => alive && setActive((data ?? []) as Order[]));
     return () => {
       alive = false;
     };
-  }, [session.user.id]);
+  }, [session.user.id, closed]);
 
-  const active = (orders ?? []).filter((o) => !isClosed(o.status));
-  const past = (orders ?? []).filter((o) => isClosed(o.status));
+  useEffect(() => {
+    let alive = true;
+    browserClient()
+      .from("orders")
+      .select("*", { count: "exact" })
+      .eq("customer_id", session.user.id)
+      .in("status", closedStatuses)
+      .order("created_at", { ascending: false })
+      .range(page * PAGE, page * PAGE + PAGE - 1)
+      .then(({ data, count }) => alive && setPast({ page, rows: (data ?? []) as Order[], total: count ?? 0 }));
+    return () => {
+      alive = false;
+    };
+  }, [session.user.id, page]);
+
+  const history = past?.page === page ? past : null;
 
   return (
     <>
       <h1 className="font-display text-4xl leading-tight sm:text-5xl">Mes commandes</h1>
-      {!orders ? (
+      {!active || !history ? (
         <div className="mt-8 h-48 animate-pulse rounded-card bg-surface-alt" />
-      ) : orders.length === 0 ? (
+      ) : active.length + history.total === 0 ? (
         <div className="mt-8">
           <EmptyState icon={ShoppingBag} title="Aucune commande pour l'instant" action={<ButtonLink href="/#restaurants">Commander</ButtonLink>} />
         </div>
       ) : (
         <>
           {active.length > 0 && <List title="En cours" orders={active} />}
-          {past.length > 0 && <List title="Historique" orders={past} />}
+          {history.rows.length > 0 && <List title="Historique" orders={history.rows} />}
+          <Pager page={page} total={history.total} onChange={setPage} />
         </>
       )}
     </>

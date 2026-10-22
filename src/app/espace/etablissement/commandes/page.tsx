@@ -4,6 +4,7 @@ import { Drawer, dialog } from "@/components/dialog";
 import { useEffect, useMemo, useState } from "react";
 import { Bike, ClipboardList, Clock, MapPin, Search } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
+import { Pager } from "@/components/pager";
 import { ItemLines, StatusBadge, Timeline, useOrderItems } from "@/components/order-parts";
 import { Button, Card, fieldClass } from "@/components/ui";
 import { PeriodPicker } from "@/components/admin-charts";
@@ -151,7 +152,6 @@ function History({ establishmentId, now }: { establishmentId: string; now: numbe
 
   const current = result?.key === key ? result : null;
   const items = useOrderItems((current?.rows ?? []).map((o) => o.id));
-  const pages = Math.max(1, Math.ceil((current?.total ?? 0) / PAGE));
   const reset = <T,>(set: (v: T) => void) => (v: T) => {
     set(v);
     setPage(0);
@@ -190,19 +190,7 @@ function History({ establishmentId, now }: { establishmentId: string; now: numbe
           </ul>
         )}
       </div>
-      {pages > 1 && (
-        <nav aria-label="Pages" className="mt-6 flex items-center justify-center gap-3 text-sm">
-          <Button variant="outline" className="h-9 px-4" disabled={page === 0} onClick={() => setPage(page - 1)}>
-            Précédentes
-          </Button>
-          <span className="tabular text-muted">
-            Page {page + 1} / {pages}
-          </span>
-          <Button variant="outline" className="h-9 px-4" disabled={page + 1 >= pages} onClick={() => setPage(page + 1)}>
-            Suivantes
-          </Button>
-        </nav>
-      )}
+      <Pager page={page} total={current?.total ?? 0} size={PAGE} onChange={setPage} />
       {selected && <OrderPanel order={selected} items={items[selected.id]} onClose={() => setSelected(null)} />}
     </>
   );
